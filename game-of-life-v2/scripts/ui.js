@@ -13,7 +13,7 @@ import { getTheme, setTheme } from "./themes.js";
 import { getRuleLabel } from "./rules.js";
 import { getCurrentPattern, setTool } from "./tools.js";
 import { syncAudioState } from "./audio.js";
-import { drawSparkline, drawPatternPreview } from "./render.js";
+import { drawSparkline, drawPatternPreview, ensureCanvasSize } from "./render.js";
 
 // ---------- Toast + clipboard ----------
 
@@ -124,6 +124,10 @@ export function renderPatternCard() {
 export function showSparklinePopover() {
   if (!els.sparklinePopover) return;
   els.sparklinePopover.classList.add("visible");
+  // The sparkline canvas backing store may have been skipped while the
+  // popover was hidden (see ensureCanvasSize). Resize now that layout has
+  // given it real dimensions, then draw.
+  ensureCanvasSize();
   drawSparkline();
 }
 

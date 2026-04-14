@@ -83,7 +83,7 @@ export function endInteraction() {
   canvas.style.cursor = "crosshair";
   if (interaction.type === "pan") return;
   if (interaction.type === "touch-panzoom") return;
-  if ((state.currentTool === "freehand" || state.currentTool === "eraser") && interaction.strokeBefore) {
+  if (interaction.strokeBefore) {
     const label = interaction.type === "draw-paint" ? "Paint stroke" : "Erase stroke";
     commitStroke(interaction.strokeBefore, label);
     return;

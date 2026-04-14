@@ -4,7 +4,7 @@ import { BASE_CELL_SIZE, MIN_ZOOM, MAX_ZOOM } from "./constants.js";
 import { state, canvasRefs } from "./state.js";
 import { clamp, xyFromKey } from "./utils.js";
 import { getCurrentPattern, getPatternOffsetCells, getToolCells, setTool } from "./tools.js";
-import { addCells, stepSimulation, resetSimulation, randomFill } from "./sim.js";
+import { addCells, commitStroke, stepSimulation, resetSimulation, randomFill } from "./sim.js";
 import { screenToWorld } from "./render.js";
 import { undo, redo } from "./history.js";
 import {
@@ -44,7 +44,8 @@ export function beginInteraction(kind, clientX, clientY, button = 0) {
     button,
   };
   if (state.currentTool === "freehand" || state.currentTool === "eraser") {
-    addCells([[world.x, world.y]], !erase, erase ? "Erase cell" : "Paint cell");
+    state.interaction.strokeBefore = new Map(state.liveCells);
+    addCells([[world.x, world.y]], !erase, "", false);
   } else if (state.currentTool === "stamp") {
     addCells(getPatternOffsetCells(world.x, world.y), !erase, erase ? "Erase stamp" : `Stamp ${getCurrentPattern().name}`);
   }
@@ -68,7 +69,8 @@ export function updateInteraction(clientX, clientY) {
     addCells(
       [[world.x, world.y]],
       state.interaction.type === "draw-paint",
-      state.interaction.type === "draw-paint" ? "Paint stroke" : "Erase stroke",
+      "",
+      false,
     );
   }
 }
@@ -81,6 +83,11 @@ export function endInteraction() {
   canvas.style.cursor = "crosshair";
   if (interaction.type === "pan") return;
   if (interaction.type === "touch-panzoom") return;
+  if ((state.currentTool === "freehand" || state.currentTool === "eraser") && interaction.strokeBefore) {
+    const label = interaction.type === "draw-paint" ? "Paint stroke" : "Erase stroke";
+    commitStroke(interaction.strokeBefore, label);
+    return;
+  }
   if (["line", "box", "circle"].includes(state.currentTool)) {
     addCells(
       getToolCells(interaction.start, interaction.current || interaction.start),

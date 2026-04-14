@@ -126,15 +126,19 @@ export function randomFill() {
   showToast("Filled the active field at 25% density.");
 }
 
-export function addCells(cells, alive, label = "Edit") {
+export function addCells(cells, alive, label = "Edit", pushUndo = true) {
   if (!cells.length) return;
-  const before = new Map(state.liveCells);
+  const before = pushUndo ? new Map(state.liveCells) : null;
   cells.forEach(([x, y]) => {
     const key = normalizeKeyForState(x, y);
     if (alive) state.liveCells.set(key, 1);
     else state.liveCells.delete(key);
   });
-  commitDiffFromMaps(before, state.liveCells, label);
+  if (pushUndo) commitStroke(before, label);
+}
+
+export function commitStroke(beforeMap, label) {
+  commitDiffFromMaps(beforeMap, state.liveCells, label);
   state.populationHistory = state.populationHistory
     .concat(state.liveCells.size)
     .slice(-MAX_SPARKLINE_POINTS);

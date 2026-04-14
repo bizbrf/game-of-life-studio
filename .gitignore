@@ -35,11 +35,12 @@ npm-debug.log*
 .claude/
 .superpowers/
 
-# Temp dev artifacts
-output/*-temp.mjs
-output/*-temp.*
+# Local scratch output — screenshots promoted to docs/screenshots/ live in the repo;
+# everything else here stays local.
+output/
 
 # Legacy prototypes (tracked in separate repos or retained as local-only reference)
+_legacy/
 game-of-life/
 grid_evolution
 

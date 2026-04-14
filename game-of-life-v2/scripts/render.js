@@ -186,8 +186,14 @@ export function drawSparkline() {
   });
   sparkCtx.stroke();
   sparkCtx.fillStyle = `rgba(${getTheme().colors.accentRgb}, 0.12)`;
+  sparkCtx.beginPath();
+  sparkCtx.moveTo(0, height);
+  values.forEach((value, index) => {
+    const x = (index / Math.max(1, values.length - 1)) * width;
+    const y = height - (value / max) * (height - 8) - 4;
+    sparkCtx.lineTo(x, y);
+  });
   sparkCtx.lineTo(width, height);
-  sparkCtx.lineTo(0, height);
   sparkCtx.closePath();
   sparkCtx.fill();
 }

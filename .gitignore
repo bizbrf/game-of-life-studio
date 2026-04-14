@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+env/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node (in case Playwright or tooling ever lands here)
+node_modules/
+npm-debug.log*
+
+# Local / temp
+*.log
+*.tmp
+.env
+.env.local
+
+# Planning (global preference: .planning stays local)
+.planning/
+
+# Claude Code / skill local state (machine-specific, not project code)
+.claude/
+.superpowers/
+
+# Temp dev artifacts
+output/*-temp.mjs
+output/*-temp.*
+
+# Legacy prototypes (tracked in separate repos or retained as local-only reference)
+game-of-life/
+grid_evolution
+
+# Build / dist (none yet, but future-proofing)
+dist/
+build/

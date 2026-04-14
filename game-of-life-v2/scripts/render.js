@@ -13,8 +13,8 @@ export function ensureCanvasSize() {
   canvas.width = Math.max(1, Math.floor(clientWidth * dpr));
   canvas.height = Math.max(1, Math.floor(clientHeight * dpr));
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  sparklineCanvas.width = Math.floor(sparklineCanvas.clientWidth * dpr);
-  sparklineCanvas.height = Math.floor(sparklineCanvas.clientHeight * dpr);
+  sparklineCanvas.width = Math.max(1, Math.floor(sparklineCanvas.clientWidth * dpr));
+  sparklineCanvas.height = Math.max(1, Math.floor(sparklineCanvas.clientHeight * dpr));
   sparkCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 

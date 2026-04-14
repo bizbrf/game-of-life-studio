@@ -126,19 +126,38 @@ export function randomFill() {
   showToast("Filled the active field at 25% density.");
 }
 
-export function addCells(cells, alive, label = "Edit", pushUndo = true) {
+export function addCells(cells, alive, label = "Edit", pushUndo = true, strokeBefore = null) {
   if (!cells.length) return;
-  const before = pushUndo ? new Map(state.liveCells) : null;
+  const fullBefore = pushUndo ? new Map(state.liveCells) : null;
   cells.forEach(([x, y]) => {
     const key = normalizeKeyForState(x, y);
+    if (strokeBefore && !strokeBefore.has(key)) {
+      strokeBefore.set(key, state.liveCells.get(key) || 0);
+    }
     if (alive) state.liveCells.set(key, 1);
     else state.liveCells.delete(key);
   });
-  if (pushUndo) commitStroke(before, label);
+  if (!pushUndo) return;
+  if (!commitDiffFromMaps(fullBefore, state.liveCells, label)) return;
+  state.populationHistory = state.populationHistory
+    .concat(state.liveCells.size)
+    .slice(-MAX_SPARKLINE_POINTS);
+  state.simulationHistory = [];
+  pushSimulationSnapshot();
 }
 
-export function commitStroke(beforeMap, label) {
-  commitDiffFromMaps(beforeMap, state.liveCells, label);
+// Commits only the user-touched keys recorded in strokeBefore, so a diff
+// does not accidentally include simulation evolution that ran during the
+// stroke. strokeBefore maps key → value-before-user-first-touched-it.
+export function commitStroke(strokeBefore, label) {
+  if (!strokeBefore || !strokeBefore.size) return;
+  const diff = [];
+  for (const [key, before] of strokeBefore.entries()) {
+    const after = state.liveCells.get(key) || 0;
+    if (before !== after) diff.push({ key, before, after });
+  }
+  if (!diff.length) return;
+  pushUndoEntry(diff, label);
   state.populationHistory = state.populationHistory
     .concat(state.liveCells.size)
     .slice(-MAX_SPARKLINE_POINTS);

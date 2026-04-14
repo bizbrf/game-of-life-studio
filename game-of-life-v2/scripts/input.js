@@ -44,8 +44,8 @@ export function beginInteraction(kind, clientX, clientY, button = 0) {
     button,
   };
   if (state.currentTool === "freehand" || state.currentTool === "eraser") {
-    state.interaction.strokeBefore = new Map(state.liveCells);
-    addCells([[world.x, world.y]], !erase, "", false);
+    state.interaction.strokeBefore = new Map();
+    addCells([[world.x, world.y]], !erase, "", false, state.interaction.strokeBefore);
   } else if (state.currentTool === "stamp") {
     addCells(getPatternOffsetCells(world.x, world.y), !erase, erase ? "Erase stamp" : `Stamp ${getCurrentPattern().name}`);
   }
@@ -71,6 +71,7 @@ export function updateInteraction(clientX, clientY) {
       state.interaction.type === "draw-paint",
       "",
       false,
+      state.interaction.strokeBefore,
     );
   }
 }

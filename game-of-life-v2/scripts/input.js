@@ -80,6 +80,7 @@ export function endInteraction() {
   state.interaction = null;
   canvas.style.cursor = "crosshair";
   if (interaction.type === "pan") return;
+  if (interaction.type === "touch-panzoom") return;
   if (["line", "box", "circle"].includes(state.currentTool)) {
     addCells(
       getToolCells(interaction.start, interaction.current || interaction.start),

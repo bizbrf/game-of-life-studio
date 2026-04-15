@@ -288,7 +288,11 @@ function bindEvents() {
 
   // ----- Inspector: Scene row -----
   els.fitBtn.addEventListener("click", () => autoFit());
-  els.randomBtn.addEventListener("click", () => { randomFill(); updateUI(); });
+  els.randomBtn.addEventListener("click", () => {
+    const result = randomFill();
+    showToast(result.message);
+    updateUI();
+  });
   els.resetBtn.addEventListener("click", () => { resetSimulation(); updateUI(); });
   els.ioBtn.addEventListener("click", () => openModal("io-modal"));
   els.helpBtn.addEventListener("click", () => openModal("help-modal"));

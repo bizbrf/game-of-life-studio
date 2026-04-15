@@ -225,6 +225,7 @@ export function setupUI() {
     button.type = "button";
     button.dataset.toggle = key;
     button.textContent = label;
+    button.setAttribute("aria-pressed", String(!!state[key]));
     button.addEventListener("click", () => {
       state[key] = !state[key];
       if (key === "sound") syncAudioState();
@@ -315,7 +316,9 @@ export function updateUI() {
 
   // Behavior toggles
   Array.from(els.toggleButtons.children).forEach((btn) => {
-    btn.classList.toggle("active", !!state[btn.dataset.toggle]);
+    const pressed = !!state[btn.dataset.toggle];
+    btn.classList.toggle("active", pressed);
+    btn.setAttribute("aria-pressed", String(pressed));
   });
 
   // Theme swatches

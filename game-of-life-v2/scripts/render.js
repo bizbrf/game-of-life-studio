@@ -10,18 +10,31 @@ export function ensureCanvasSize() {
   const dpr = window.devicePixelRatio || 1;
   const { canvas, ctx, sparklineCanvas, sparkCtx } = canvasRefs;
   const { clientWidth, clientHeight } = canvas;
-  canvas.width = Math.max(1, Math.floor(clientWidth * dpr));
-  canvas.height = Math.max(1, Math.floor(clientHeight * dpr));
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // Writing to canvas.width / .height resets the 2D context state (including
+  // the DPR transform) even when the assigned value is unchanged. Guard
+  // behind a change check so the idempotent case — the common one, since
+  // this function is called every window resize and from the RAF-ish paths —
+  // doesn't trigger a wasted context reset.
+  const targetW = Math.max(1, Math.floor(clientWidth * dpr));
+  const targetH = Math.max(1, Math.floor(clientHeight * dpr));
+  if (canvas.width !== targetW || canvas.height !== targetH) {
+    canvas.width = targetW;
+    canvas.height = targetH;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
   // Skip the sparkline resize while its popover is hidden (clientW/H === 0):
   // writing 0 to canvas.width would wipe the DPR transform, and clamping to 1
   // leaves a 1×1 backing store in place once the popover becomes visible.
   // Re-sizing happens either on the next window resize while visible or via
   // showSparklinePopover() which calls ensureCanvasSize again.
   if (sparklineCanvas.clientWidth > 0 && sparklineCanvas.clientHeight > 0) {
-    sparklineCanvas.width = Math.floor(sparklineCanvas.clientWidth * dpr);
-    sparklineCanvas.height = Math.floor(sparklineCanvas.clientHeight * dpr);
-    sparkCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const spkTargetW = Math.floor(sparklineCanvas.clientWidth * dpr);
+    const spkTargetH = Math.floor(sparklineCanvas.clientHeight * dpr);
+    if (sparklineCanvas.width !== spkTargetW || sparklineCanvas.height !== spkTargetH) {
+      sparklineCanvas.width = spkTargetW;
+      sparklineCanvas.height = spkTargetH;
+      sparkCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
   }
 }
 

@@ -26,9 +26,9 @@ export function generateCustomPalette(accentHex) {
 }
 
 // Custom-palette memoization: generateCustomPalette allocates an 8-element
-// array plus hexToRgb/rgbToHex ops per cell. state.accent only changes on
-// user interaction (accent picker input), but getPaletteColors is called
-// every frame from drawCells.
+// array plus hexToRgb/rgbToHex ops per call to getPaletteColors.
+// state.accent only changes on user interaction (accent picker input), but
+// getPaletteColors is called every frame from drawCells.
 let cachedCustomAccent = null;
 let cachedCustomPalette = null;
 

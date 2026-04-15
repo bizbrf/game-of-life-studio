@@ -19,6 +19,7 @@ import {
   closeInspector,
   closeSpeedPopover,
   closeRulePopover,
+  showToast,
 } from "./ui.js";
 import { syncAudioState } from "./audio.js";
 
@@ -202,7 +203,10 @@ export function handleKeydown(event) {
     case " ": event.preventDefault(); state.simulating = !state.simulating; syncAudioState(); break;
     case "n": case "N": if (!state.simulating) stepSimulation(); break;
     case "r": case "R": resetSimulation(); break;
-    case "f": case "F": randomFill(visibleWorldBounds(0)); break;
+    case "f": case "F":
+      randomFill(visibleWorldBounds(0));
+      showToast("Filled the active field at 25% density.");
+      break;
     case "g": case "G": state.gridLines = !state.gridLines; break;
     case "w": case "W": state.wrap = !state.wrap; break;
     case "t": case "T": cycleTheme(); break;

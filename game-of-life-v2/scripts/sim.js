@@ -11,7 +11,6 @@ import {
   pushUndoEntry,
 } from "./history.js";
 import { emitStepSound } from "./audio.js";
-import { showToast } from "./ui.js";
 
 export function normalizeWrappedCoord(x, y) {
   const minX = -Math.floor(WRAP_BOUNDS.width / 2);
@@ -129,7 +128,6 @@ export function randomFill(visibleBounds) {
   state.populationHistory = [state.liveCells.size];
   state.simulationHistory = [];
   pushSimulationSnapshot();
-  showToast("Filled the active field at 25% density.");
 }
 
 export function addCells(cells, alive, label = "Edit", pushUndo = true, strokeBefore = null) {

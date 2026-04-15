@@ -18,7 +18,7 @@
          toast layer (below) carries all user-intent announcements. -->
     <div class="status-strip" id="status-strip">
       <span class="dot" id="status-dot"></span>
-      <button class="rule-name" id="status-rule" type="button" aria-haspopup="menu" aria-expanded="false">Conway</button>
+      <button class="rule-name" id="status-rule" type="button" aria-haspopup="dialog" aria-expanded="false">Conway</button>
       <span class="sep">·</span>
       <span>Gen <span id="status-gen">0</span></span>
       <span class="sep">·</span>
@@ -46,7 +46,10 @@
     <div class="popover" id="speed-popover" role="menu" aria-label="Simulation speed"></div>
 
     <!-- RULE POPOVER -->
-    <div class="popover" id="rule-popover" role="menu" aria-label="Rule presets"></div>
+    <!-- role="dialog" not "menu": contains both preset buttons AND a freeform
+         B/S input. ARIA menus expect only menuitems + arrow-key nav; mixed
+         content (menu + textbox) confuses assistive tech. Dialog allows both. -->
+    <div class="popover" id="rule-popover" role="dialog" aria-label="Rule presets"></div>
 
     <!-- SHORTCUT HINT -->
     <div class="shortcut-hint"><kbd>⌘K</kbd></div>

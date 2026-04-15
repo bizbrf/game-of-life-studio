@@ -5,7 +5,7 @@ import { state, els, canvasRefs } from "./state.js";
 import { clamp, xyFromKey } from "./utils.js";
 import { getCurrentPattern, getPatternOffsetCells, getToolCells, setTool } from "./tools.js";
 import { addCells, commitStroke, stepSimulation, resetSimulation, randomFill } from "./sim.js";
-import { screenToWorld } from "./render.js";
+import { screenToWorld, visibleWorldBounds } from "./render.js";
 import { undo, redo } from "./history.js";
 import {
   updateUI,
@@ -202,7 +202,7 @@ export function handleKeydown(event) {
     case " ": event.preventDefault(); state.simulating = !state.simulating; syncAudioState(); break;
     case "n": case "N": if (!state.simulating) stepSimulation(); break;
     case "r": case "R": resetSimulation(); break;
-    case "f": case "F": randomFill(); break;
+    case "f": case "F": randomFill(visibleWorldBounds(0)); break;
     case "g": case "G": state.gridLines = !state.gridLines; break;
     case "w": case "W": state.wrap = !state.wrap; break;
     case "t": case "T": cycleTheme(); break;

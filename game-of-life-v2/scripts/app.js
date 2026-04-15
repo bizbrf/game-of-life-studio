@@ -436,6 +436,12 @@ function initialize() {
   applyRule(state.rule);
   setTheme("obsidian", true);
   state.paletteId = getTheme().defaultPalette;
+  // Respect prefers-reduced-motion: disable floating background particles.
+  // CSS handles transitions / keyframes; this handles the JS-driven particle
+  // animation loop.
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    state.particles = false;
+  }
   pushSimulationSnapshot();
   bindEvents();
   updateUI();

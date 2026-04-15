@@ -1033,3 +1033,17 @@ kbd {
   .modal-backdrop { padding: 12px; }
   .modal, .modal.large { width: 100%; max-height: 88vh; padding: 16px; }
 }
+
+/* Respect users who have opted into reduced motion: kill long transitions,
+   animations, and smooth scrolling. JS-driven background particles are also
+   gated on the same media query in app.js:initialize(). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

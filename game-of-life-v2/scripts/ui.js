@@ -309,7 +309,7 @@ export function renderPatternBrowser() {
 
 const TOOL_ICONS = {
   freehand: '<svg viewBox="0 0 20 20"><path d="M4 16l3-1 8-8-2-2-8 8-1 3z" stroke-linejoin="round" stroke-linecap="round"/></svg>',
-  eraser:   '<svg viewBox="0 0 20 20"><path d="M12 4l4 4-8 8H4v-4l8-8z" stroke-linejoin="round"/><path d="M8 16l-4-4" stroke-linecap="round"/></svg>',
+  eraser:   '<svg viewBox="0 0 20 20"><rect x="4" y="4" width="5" height="5" rx="1"/><rect x="11" y="4" width="5" height="5" rx="1"/><rect x="4" y="11" width="5" height="5" rx="1"/><rect x="11" y="11" width="5" height="5" rx="1"/><path d="M3 17L17 3" stroke-linecap="round"/></svg>',
   stamp:    '<svg viewBox="0 0 20 20"><rect x="4" y="4" width="5" height="5" rx="1"/><rect x="11" y="4" width="5" height="5" rx="1"/><rect x="4" y="11" width="5" height="5" rx="1"/><rect x="11" y="11" width="5" height="5" rx="1"/></svg>',
   line:     '<svg viewBox="0 0 20 20"><path d="M4 16L16 4" stroke-linecap="round"/></svg>',
   box:      '<svg viewBox="0 0 20 20"><rect x="4" y="4" width="12" height="12" rx="1"/></svg>',

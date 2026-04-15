@@ -9,6 +9,13 @@ import { getCurrentPattern, getPatternOffsetCells, getToolCells } from "./tools.
 import { addCells, commitStroke } from "./sim.js";
 import { screenToWorld } from "./render.js";
 
+// Right-click tap vs. drag threshold. Below this many pixels of movement
+// we treat the gesture as a single-cell erase; above, we convert it to a
+// canvas pan. 6px matches the browser's native click-vs-drag feel and is
+// generous enough that an accidental tremor during a right-click tap
+// doesn't get misread as a pan.
+const PAN_DRAG_THRESHOLD_SQ = 36;
+
 export function beginInteraction(kind, clientX, clientY, button = 0) {
   if (state.modals.size > 0) return;
   const { canvas } = canvasRefs;
@@ -25,10 +32,27 @@ export function beginInteraction(kind, clientX, clientY, button = 0) {
     canvas.style.cursor = "grabbing";
     return;
   }
-  // When the eraser tool is active, every pointer-down erases regardless of
-  // which button (or touch) triggered it. Without this, left-click with the
-  // eraser tool selected would paint cells alive instead of removing them.
-  const erase = kind === "erase" || button === 2 || state.currentTool === "eraser";
+  if (kind === "erase") {
+    // Tentative: a short right-click tap erases one cell (committed in
+    // endInteraction); a drag past PAN_DRAG_THRESHOLD_SQ converts to pan.
+    // Keeps the prior "right-click = erase" shortcut while adding the
+    // map-UI convention of right-drag to pan.
+    state.interaction = {
+      type: "erase-or-pan",
+      startClientX: clientX,
+      startClientY: clientY,
+      startCameraX: state.camera.x,
+      startCameraY: state.camera.y,
+      start: world,
+      button,
+    };
+    canvas.style.cursor = "grabbing";
+    return;
+  }
+  // Left-click with eraser tool active erases without the tap/drag
+  // gymnastics — eraser is a tool, not a shortcut, so drag is the normal
+  // way to erase a stroke.
+  const erase = state.currentTool === "eraser";
   state.interaction = {
     type: erase ? "draw-erase" : "draw-paint",
     start: world,
@@ -50,6 +74,15 @@ export function updateInteraction(clientX, clientY) {
   }
   const world = screenToWorld(clientX, clientY);
   state.hoverCell = world;
+  if (state.interaction.type === "erase-or-pan") {
+    const dx = clientX - state.interaction.startClientX;
+    const dy = clientY - state.interaction.startClientY;
+    if (dx * dx + dy * dy <= PAN_DRAG_THRESHOLD_SQ) return;
+    // Drag exceeded the threshold — commit to pan for the rest of this
+    // gesture. Fall through to the pan branch below so this tick moves
+    // the camera instead of waiting for the next mousemove.
+    state.interaction.type = "pan";
+  }
   if (state.interaction.type === "pan") {
     const size = BASE_CELL_SIZE * state.camera.zoom;
     state.camera.x = state.interaction.startCameraX - (clientX - state.interaction.startClientX) / size;
@@ -76,6 +109,12 @@ export function endInteraction() {
   canvas.style.cursor = "crosshair";
   if (interaction.type === "pan") return;
   if (interaction.type === "touch-panzoom") return;
+  if (interaction.type === "erase-or-pan") {
+    // Gesture ended before reaching the drag threshold — commit as a
+    // single-cell erase at the click point.
+    addCells([[interaction.start.x, interaction.start.y]], false, "Erase cell");
+    return;
+  }
   if (interaction.strokeBefore) {
     const label = interaction.type === "draw-paint" ? "Paint stroke" : "Erase stroke";
     commitStroke(interaction.strokeBefore, label);

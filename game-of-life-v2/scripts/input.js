@@ -36,7 +36,10 @@ export function beginInteraction(kind, clientX, clientY, button = 0) {
     canvas.style.cursor = "grabbing";
     return;
   }
-  const erase = kind === "erase" || button === 2;
+  // When the eraser tool is active, every pointer-down erases regardless of
+  // which button (or touch) triggered it. Without this, left-click with the
+  // eraser tool selected would paint cells alive instead of removing them.
+  const erase = kind === "erase" || button === 2 || state.currentTool === "eraser";
   state.interaction = {
     type: erase ? "draw-erase" : "draw-paint",
     start: world,

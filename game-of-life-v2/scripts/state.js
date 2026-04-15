@@ -2,7 +2,6 @@
 // Modules read/write these directly; the main loop drives UI sync.
 
 import { RULESETS } from "./constants.js";
-import { compileRule } from "./rules.js";
 
 function buildParticles(count) {
   return Array.from({ length: count }, () => ({
@@ -49,7 +48,9 @@ export const state = {
   undoStack: [],
   redoStack: [],
   rule: RULESETS[0].rule,
-  rules: compileRule(RULESETS[0].rule),
+  // Populated by app.js calling applyRule(state.rule) during initialize().
+  // Left null here to avoid a state.js ↔ rules.js module-load cycle.
+  rules: null,
   particlesState: buildParticles(28),
   modals: new Set(),
   inspectorOpen: false,

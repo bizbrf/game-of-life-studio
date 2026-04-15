@@ -203,9 +203,12 @@ export function toggleInspector() {
 // Skip the canvas redraw when nothing visible has changed. Called every
 // frame via updateUI, so this gate avoids hundreds of drawRoundedRect
 // calls/second for a preview that looks identical frame to frame.
+// Key = (patternIndex, themeId). The accent passed to drawPatternPreview
+// is always getTheme().colors.accent (matching renderPatternBrowser) so
+// the card and the modal's browser grid stay consistent under a custom
+// accent picker — preserving pre-PR behavior.
 let lastRenderedPatternIdx = -1;
 let lastRenderedThemeId = null;
-let lastRenderedAccent = null;
 
 export function renderPatternCard() {
   const pattern = getCurrentPattern();
@@ -213,16 +216,12 @@ export function renderPatternCard() {
   if (els.patternCardCategory) els.patternCardCategory.textContent = pattern.category;
   if (!els.patternCardPreview) return;
   const themeId = getTheme().id;
-  const accent = state.paletteId === "custom" ? state.accent : getTheme().colors.accent;
-  if (state.patternIndex === lastRenderedPatternIdx
-      && themeId === lastRenderedThemeId
-      && accent === lastRenderedAccent) {
+  if (state.patternIndex === lastRenderedPatternIdx && themeId === lastRenderedThemeId) {
     return;
   }
-  drawPatternPreview(els.patternCardPreview, pattern, accent);
+  drawPatternPreview(els.patternCardPreview, pattern, getTheme().colors.accent);
   lastRenderedPatternIdx = state.patternIndex;
   lastRenderedThemeId = themeId;
-  lastRenderedAccent = accent;
 }
 
 // ---------- Sparkline popover ----------

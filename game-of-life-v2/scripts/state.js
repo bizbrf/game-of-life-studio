@@ -11,6 +11,10 @@ function buildParticles(count) {
     speed: Math.random() * 0.015 + 0.006,
     drift: (Math.random() - 0.5) * 0.01,
     alpha: Math.random() * 0.25 + 0.08,
+    // Populated by render.ensureParticleStyles on first draw (and on every
+    // theme switch thereafter). Declared here so the particle shape is
+    // self-documenting.
+    fillStyle: "",
   }));
 }
 

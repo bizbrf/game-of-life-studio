@@ -200,11 +200,29 @@ export function toggleInspector() {
 
 // ---------- Pattern card ----------
 
+// Skip the canvas redraw when nothing visible has changed. Called every
+// frame via updateUI, so this gate avoids hundreds of drawRoundedRect
+// calls/second for a preview that looks identical frame to frame.
+let lastRenderedPatternIdx = -1;
+let lastRenderedThemeId = null;
+let lastRenderedAccent = null;
+
 export function renderPatternCard() {
   const pattern = getCurrentPattern();
   if (els.patternCardName) els.patternCardName.textContent = pattern.name;
   if (els.patternCardCategory) els.patternCardCategory.textContent = pattern.category;
-  if (els.patternCardPreview) drawPatternPreview(els.patternCardPreview, pattern, getTheme().colors.accent);
+  if (!els.patternCardPreview) return;
+  const themeId = getTheme().id;
+  const accent = state.paletteId === "custom" ? state.accent : getTheme().colors.accent;
+  if (state.patternIndex === lastRenderedPatternIdx
+      && themeId === lastRenderedThemeId
+      && accent === lastRenderedAccent) {
+    return;
+  }
+  drawPatternPreview(els.patternCardPreview, pattern, accent);
+  lastRenderedPatternIdx = state.patternIndex;
+  lastRenderedThemeId = themeId;
+  lastRenderedAccent = accent;
 }
 
 // ---------- Sparkline popover ----------

@@ -254,6 +254,7 @@ export function renderPatternBrowser() {
       selectPattern(realIndex, true);
       closeModal("pattern-modal");
       showToast(`${pattern.name} selected.`);
+      updateUI();
     });
     els.patternBrowserGrid.appendChild(card);
   });
@@ -298,7 +299,7 @@ export function setupUI() {
     button.dataset.tool = tool.id;
     button.setAttribute("aria-label", tool.label);
     button.innerHTML = TOOL_ICONS[tool.id] || tool.label;
-    button.addEventListener("click", () => setTool(tool.id));
+    button.addEventListener("click", () => { setTool(tool.id); updateUI(); });
     els.toolGrid.appendChild(button);
   });
 

@@ -218,6 +218,7 @@ export function handleKeydown(event) {
       // Lazy import avoids a load-order cycle with tools.js
       import("./tools.js").then(({ selectPattern }) => {
         selectPattern(state.patternIndex + (event.shiftKey ? -1 : 1), true);
+        updateUI();
       });
       break;
     case "+": case "=": adjustSpeed(2); break;

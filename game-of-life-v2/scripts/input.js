@@ -154,10 +154,14 @@ export function handleKeydown(event) {
   if (event.key === "Tab" && isModalOpen()) return;
   if (event.key === "Escape") {
     event.preventDefault();
-    // Close visible popovers first — they're above modals/inspector in the
-    // visual stack. Popover internal keydown listeners handle Escape while
-    // focus is inside them; this branch catches the case where focus has
-    // left the popover but the popover is still visible.
+    // Close the topmost overlay first: modal > inspector > popover. Modals
+    // and inspector sit ABOVE popovers in the visual / semantic stack, so
+    // Escape must peel them off before touching a background popover. The
+    // popover's own keydown handler (installed on openModal's trapped
+    // modal element) takes care of Escape while focus is INSIDE the
+    // popover; this branch catches the case where focus has left it.
+    if (closeTopModal()) return;
+    if (state.inspectorOpen) { closeInspector(); return; }
     if (els.rulePopover && els.rulePopover.classList.contains("visible")) {
       closeRulePopover();
       return;
@@ -166,9 +170,14 @@ export function handleKeydown(event) {
       closeSpeedPopover({ restoreFocus: false });
       return;
     }
-    if (closeTopModal()) return;
-    if (state.inspectorOpen) { closeInspector(); return; }
   }
+  // While a modal is open, the document-level global shortcuts
+  // (Space/play-pause, R/reset, F/fill, G/grid, W/wrap, T/theme, 1-6 tools,
+  // Tab/pattern-cycle, etc.) must not fire — they would mutate sim state
+  // from behind the dialog and hijack Space / Enter activations on the
+  // modal's focused button. Tab is already guarded above; short-circuit
+  // everything else here too.
+  if (isModalOpen()) return;
   if ((event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === "k") {
     event.preventDefault();
     toggleInspector();

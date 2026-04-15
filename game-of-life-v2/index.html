@@ -11,8 +11,12 @@
   <div id="app">
     <canvas id="life-canvas" aria-label="Game of Life canvas"></canvas>
 
-    <!-- STATUS STRIP -->
-    <div class="status-strip" id="status-strip" role="status" aria-live="polite">
+    <!-- STATUS STRIP
+         Intentionally NOT a live region: generation / population counts
+         update every frame, and an aria-live on the strip would spam screen
+         readers with "Gen 1001, Gen 1002, ..." at simulation speed. The
+         toast layer (below) carries all user-intent announcements. -->
+    <div class="status-strip" id="status-strip">
       <span class="dot" id="status-dot"></span>
       <button class="rule-name" id="status-rule" type="button" aria-haspopup="menu" aria-expanded="false">Conway</button>
       <span class="sep">·</span>

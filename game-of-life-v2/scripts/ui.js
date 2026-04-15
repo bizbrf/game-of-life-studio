@@ -66,6 +66,10 @@ function trapTabWithin(modal) {
 }
 
 export function openModal(id) {
+  // Idempotent: repeated open calls (e.g. `?` pressed while help modal is
+  // already open) must not stack duplicate Tab-trap handlers or focus
+  // snapshots on modalFocusStack. If the modal is already open, do nothing.
+  if (state.modals.has(id)) return;
   const modal = document.getElementById(id);
   modal.classList.add("open");
   modal.setAttribute("aria-hidden", "false");
@@ -87,14 +91,19 @@ export function closeModal(id) {
   modal.setAttribute("aria-hidden", "true");
   state.modals.delete(id);
 
-  const stackIdx = modalFocusStack.findIndex((entry) => entry.id === id);
-  if (stackIdx >= 0) {
-    const { lastFocused, trapHandler } = modalFocusStack[stackIdx];
-    modal.removeEventListener("keydown", trapHandler);
-    modalFocusStack.splice(stackIdx, 1);
-    if (lastFocused && typeof lastFocused.focus === "function"
-        && document.body.contains(lastFocused)) {
-      lastFocused.focus();
+  // LIFO removal: peel off the topmost entry matching this id. Combined with
+  // openModal's idempotency guard, this keeps modalFocusStack a true stack
+  // even if some future path skips the guard.
+  for (let i = modalFocusStack.length - 1; i >= 0; i -= 1) {
+    if (modalFocusStack[i].id === id) {
+      const { lastFocused, trapHandler } = modalFocusStack[i];
+      modal.removeEventListener("keydown", trapHandler);
+      modalFocusStack.splice(i, 1);
+      if (lastFocused && typeof lastFocused.focus === "function"
+          && document.body.contains(lastFocused)) {
+        lastFocused.focus();
+      }
+      break;
     }
   }
 }

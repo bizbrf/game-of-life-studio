@@ -281,7 +281,17 @@ function getPreviewCells() {
   if (state.currentTool === "stamp" && getCurrentPattern().cells) {
     return getPatternOffsetCells(state.hoverCell.x, state.hoverCell.y);
   }
-  if (["line", "box", "circle"].includes(state.currentTool) && state.interaction && state.interaction.start) {
+  // Only render the line/box/circle "anchor to hover" preview during an
+  // actual draw gesture. `erase-or-pan` (tentative right-click) also
+  // carries a `start` field, as does its converted `pan` successor — so
+  // without this type gate, right-click-tapping or right-drag-panning
+  // would flash a preview anchored at the click point.
+  if (
+    ["line", "box", "circle"].includes(state.currentTool)
+    && state.interaction
+    && state.interaction.start
+    && (state.interaction.type === "draw-paint" || state.interaction.type === "draw-erase")
+  ) {
     return getToolCells(state.interaction.start, state.hoverCell);
   }
   return [[state.hoverCell.x, state.hoverCell.y]];

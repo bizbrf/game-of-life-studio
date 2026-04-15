@@ -1,8 +1,7 @@
 // Rule parsing and application (B/S notation).
 
 import { RULESETS } from "./constants.js";
-import { state, els } from "./state.js";
-import { showToast } from "./ui.js";
+import { state } from "./state.js";
 
 export function compileRule(ruleString) {
   const match = /^B([0-8]*)\/S([0-8]*)$/i.exec(ruleString.trim());
@@ -19,21 +18,17 @@ export function canonicalizeRule(ruleString) {
   return compiled ? compiled.rule : null;
 }
 
-export function applyRule(ruleString, announce = false) {
+// Applies a rule string to state. Returns a result; callers (app.js / ui.js)
+// surface toasts and sync DOM via updateUI(). Keeping DOM out of rules.js
+// keeps the module dependency-direction-clean.
+export function applyRule(ruleString) {
   const compiled = compileRule(ruleString);
   if (!compiled) {
-    showToast("Invalid rule. Use B/S notation like B3/S23.");
-    els.ruleInput.value = state.rule;
-    return false;
+    return { success: false, message: "Invalid rule. Use B/S notation like B3/S23." };
   }
   state.rule = compiled.rule;
   state.rules = compiled;
-  els.ruleInput.value = state.rule;
-  const preset = RULESETS.find((item) => item.rule === state.rule);
-  els.rulesetSelect.value = preset ? preset.rule : "custom";
-  els.exportNote.textContent = `Exports use ${state.rule}.`;
-  if (announce) showToast(`Ruleset set to ${state.rule}`);
-  return true;
+  return { success: true, rule: compiled.rule };
 }
 
 export function getRuleLabel() {

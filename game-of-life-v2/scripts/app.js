@@ -49,6 +49,17 @@ import {
   handleKeydown,
 } from "./input.js";
 
+// Orchestrator helper: applies a rule change coming from a user action and
+// surfaces the outcome via toast + updateUI. Keeps rules.js dependency-direction
+// clean (no showToast / updateUI imports in the middle layer).
+function applyRuleAndToast(ruleString) {
+  const result = applyRule(ruleString);
+  if (!result.success) showToast(result.message);
+  else showToast(`Ruleset set to ${result.rule}`);
+  updateUI();
+  return result;
+}
+
 function hydrateDomReferences() {
   canvasRefs.canvas = document.getElementById("life-canvas");
   canvasRefs.ctx = canvasRefs.canvas.getContext("2d");
@@ -225,10 +236,9 @@ function bindEvents() {
       opt.className = "option" + (state.rule === ruleset.rule ? " selected" : "");
       opt.innerHTML = `<span>${ruleset.label}</span><span class="meta">${ruleset.rule}</span>`;
       opt.addEventListener("click", () => {
-        applyRule(ruleset.rule, true);
+        applyRuleAndToast(ruleset.rule);
         closeRulePopover();
         els.statusRule.focus();
-        updateUI();
       });
       els.rulePopover.appendChild(opt);
     });
@@ -237,10 +247,9 @@ function bindEvents() {
     customRow.innerHTML = `<input type="text" value="${state.rule}" spellcheck="false" placeholder="B/S notation" aria-label="Custom B/S rule">`;
     const input = customRow.querySelector("input");
     input.addEventListener("change", () => {
-      applyRule(input.value, true);
+      applyRuleAndToast(input.value);
       closeRulePopover();
       els.statusRule.focus();
-      updateUI();
     });
     els.rulePopover.appendChild(customRow);
     els.rulePopover.style.left = `${rect.left}px`;
@@ -290,12 +299,10 @@ function bindEvents() {
   // ----- Inspector: Rule advanced controls -----
   els.rulesetSelect.addEventListener("change", () => {
     if (els.rulesetSelect.value === "custom") { els.ruleInput.focus(); return; }
-    applyRule(els.rulesetSelect.value, true);
-    updateUI();
+    applyRuleAndToast(els.rulesetSelect.value);
   });
   els.ruleInput.addEventListener("change", () => {
-    applyRule(els.ruleInput.value, true);
-    updateUI();
+    applyRuleAndToast(els.ruleInput.value);
   });
 
   // ----- Inspector: Accent picker -----

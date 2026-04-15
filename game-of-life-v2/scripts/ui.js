@@ -428,6 +428,7 @@ export function updateUI() {
   // Rule controls
   els.rulesetSelect.value = RULESETS.find((r) => r.rule === state.rule) ? state.rule : "custom";
   els.ruleInput.value = state.rule;
+  if (els.exportNote) els.exportNote.textContent = `Exports use ${state.rule}.`;
   els.accentPicker.value = state.accent;
 
   // Pattern card

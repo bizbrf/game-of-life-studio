@@ -32,6 +32,12 @@ The narrative dev log lives in [docs/journal.md](docs/journal.md). This file rec
 ### Architecture
 - Batch 4: Middle-layer modules no longer touch `document`/`window`. `themes.js` DOM writes moved to `ui.applyThemeToDOM`; `sim.randomFill` takes visibleBounds as a parameter instead of importing from `render.js`; `render.ensureCanvasSize` takes DPR as a parameter. `ARCHITECTURE.md` invariant 3 carves out Web platform APIs (`AudioContext`) with no DOM equivalent as a permitted middle-layer exception.
 
+### Accessibility (part 2)
+- Batch 6: `<details>` / `<summary>` +/− disclosure icon moved into a dedicated `aria-hidden` span so older screen readers don't announce the glyph.
+
+### Browser compatibility
+- Batch 6: `@supports not (backdrop-filter)` fallback swaps glass panels to opaque `--bg-2` so Chrome < 76 / Firefox < 103 keep legibility without the blur. Removed dead `window.webkitAudioContext` fallback (Safari 14+ supports the unprefixed API).
+
 <!--
 Release entries go above this line. Template:
 

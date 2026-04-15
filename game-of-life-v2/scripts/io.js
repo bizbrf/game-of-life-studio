@@ -78,7 +78,10 @@ export function importJson(text) {
   if (!Array.isArray(data.cells)) throw new Error("JSON must contain a cells array.");
   const before = new Map(state.liveCells);
   state.liveCells = new Map(data.cells);
-  if (data.rule) applyRule(data.rule);
+  if (data.rule) {
+    const result = applyRule(data.rule);
+    if (!result.success) throw new Error(result.message);
+  }
   if (data.theme) setTheme(data.theme, true);
   state.generation = Number(data.generation) || 0;
   commitDiffFromMaps(before, state.liveCells, "Import JSON");
@@ -95,7 +98,10 @@ export function importRle(text) {
   parsed.cells.forEach(([x, y]) => {
     state.liveCells.set(normalizeKeyForState(anchor.x + x, anchor.y + y), 1);
   });
-  if (parsed.rule) applyRule(parsed.rule);
+  if (parsed.rule) {
+    const result = applyRule(parsed.rule);
+    if (!result.success) throw new Error(result.message);
+  }
   commitDiffFromMaps(before, state.liveCells, "Import RLE");
   state.generation = 0;
   state.populationHistory = [state.liveCells.size];

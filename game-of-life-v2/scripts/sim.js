@@ -54,6 +54,11 @@ export function updateFadeAnimations(dt) {
 }
 
 export function stepSimulation() {
+  // Defensive: state.rules is null between module load and app.js:initialize()
+  // (the cycle with rules.js was broken by leaving state.rules unset until
+  // applyRule runs). Normal play can't reach this branch, but a test harness
+  // that races window.advanceTime against DOMContentLoaded could.
+  if (!state.rules) return;
   if (state.browsingHistory && state.historyCursor !== state.simulationHistory.length - 1) {
     truncateHistoryToCursor();
   }

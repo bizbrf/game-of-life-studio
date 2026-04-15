@@ -1070,6 +1070,9 @@ kbd {
     background: var(--bg-2);
   }
   .modal-backdrop {
-    background: rgba(3, 6, 12, 0.88);
+    /* Opaque bg (not bg-2) so the backdrop fully occludes the canvas
+       behind the modal — equivalent to what the blurred variant
+       achieves on modern browsers. Tracks the active theme. */
+    background: var(--bg);
   }
 }

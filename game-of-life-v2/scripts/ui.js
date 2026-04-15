@@ -268,8 +268,10 @@ export function showSparklinePopover() {
   els.sparklinePopover.classList.add("visible");
   // The sparkline canvas backing store may have been skipped while the
   // popover was hidden (see ensureCanvasSize). Resize now that layout has
-  // given it real dimensions, then draw.
-  ensureCanvasSize();
+  // given it real dimensions, then draw. DPR read here (ui.js is allowed
+  // window access per the architecture invariant); render.js receives it
+  // as a parameter.
+  ensureCanvasSize(window.devicePixelRatio || 1);
   drawSparkline();
 }
 

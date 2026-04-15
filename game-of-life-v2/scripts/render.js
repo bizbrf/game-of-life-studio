@@ -6,8 +6,10 @@ import { xyFromKey } from "./utils.js";
 import { getTheme, getPaletteColors } from "./themes.js";
 import { getCurrentPattern, getPatternOffsetCells, getToolCells } from "./tools.js";
 
-export function ensureCanvasSize() {
-  const dpr = window.devicePixelRatio || 1;
+// dpr comes from the caller (app.js / ui.js) — render.js stays out of
+// the window API surface, consistent with the ARCHITECTURE invariant
+// that keeps document/window access in app.js and ui.js only.
+export function ensureCanvasSize(dpr = 1) {
   const { canvas, ctx, sparklineCanvas, sparkCtx } = canvasRefs;
   const { clientWidth, clientHeight } = canvas;
   // Writing to canvas.width / .height resets the 2D context state (including

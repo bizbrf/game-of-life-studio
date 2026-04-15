@@ -98,7 +98,11 @@ function advanceSimulationBy(ms) {
 function bindEvents() {
   const { canvas } = canvasRefs;
 
-  window.addEventListener("resize", () => { ensureCanvasSize(); draw(); updateUI(); });
+  window.addEventListener("resize", () => {
+    ensureCanvasSize(window.devicePixelRatio || 1);
+    draw();
+    updateUI();
+  });
   document.addEventListener("keydown", handleKeydown);
 
   // ----- Canvas input -----
@@ -441,7 +445,7 @@ function updateLoop(now) {
 function initialize() {
   hydrateDomReferences();
   setupUI();
-  ensureCanvasSize();
+  ensureCanvasSize(window.devicePixelRatio || 1);
   applyRule(state.rule);
   setTheme("obsidian", true);
   state.paletteId = getTheme().defaultPalette;

@@ -343,9 +343,12 @@ export function setupUI() {
   els.speedPopover.appendChild(customRow);
 
   // Escape inside the speed popover closes it and returns focus to the trigger.
+  // Stop propagation so the document-level handleKeydown doesn't also run
+  // closeTopModal / closeInspector for the same keystroke.
   els.speedPopover.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && els.speedPopover.classList.contains("visible")) {
       event.preventDefault();
+      event.stopPropagation();
       closeSpeedPopover();
     }
   });

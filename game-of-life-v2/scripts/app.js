@@ -253,9 +253,12 @@ function bindEvents() {
     if (firstOption) firstOption.focus();
   });
   // Escape inside the rule popover closes it and returns focus to the trigger.
+  // Stop propagation so the document-level handleKeydown doesn't also run
+  // closeTopModal / closeInspector for the same keystroke.
   els.rulePopover.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && els.rulePopover.classList.contains("visible")) {
       event.preventDefault();
+      event.stopPropagation();
       closeRulePopover();
       els.statusRule.focus();
     }

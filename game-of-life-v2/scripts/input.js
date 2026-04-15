@@ -145,6 +145,11 @@ export function handleKeydown(event) {
     if (event.key === "Escape") event.target.blur();
     return;
   }
+  // When a modal is open, let the modal's own Tab-trap handler drive focus.
+  // Without this guard, the document-level Tab case below would also fire
+  // selectPattern + preventDefault on every Tab, breaking the trap and
+  // quietly mutating state.patternIndex.
+  if (event.key === "Tab" && isModalOpen()) return;
   if (event.key === "Escape") {
     event.preventDefault();
     if (closeTopModal()) return;

@@ -52,7 +52,7 @@ Minimal list to help agents pick the right module without reading every file. Wh
 ### `rules.js`
 `compileRule`, `canonicalizeRule`, `applyRule`, `getRuleLabel`
 
-`applyRule` returns `{ success: true, rule } | { success: false, message }`. Callers (`app.js`, `io.js`) surface the message via `showToast` and call `updateUI()` to project state to DOM.
+`applyRule(ruleString, announce = false)` returns a `boolean` — `true` when the rule compiled and was applied, `false` on invalid B/S notation. It surfaces its own toast on failure (`"Invalid rule. Use B/S notation like B3/S23."`) and, when `announce` is truthy, on success. Callers check the boolean and call `updateUI()` to project state to DOM; they do not emit their own toast for the rule itself.
 
 ### `themes.js`
 `getTheme`, `generateCustomPalette`, `getPaletteColors`, `setTheme`
@@ -62,12 +62,12 @@ Minimal list to help agents pick the right module without reading every file. Wh
 ### `history.js`
 `setCellAge`, `pushPopulation`, `captureSnapshot`, `pushSimulationSnapshot`, `restoreSnapshot`, `truncateHistoryToCursor`, `pushUndoEntry`, `commitDiffFromMaps`, `undo`, `redo`
 
-`undo` and `redo` return `{ success: true } | { success: false, message }`.
+`undo` and `redo` have no meaningful return value (implicit `undefined`). On an empty stack they surface their own toast (`"Nothing to undo."` / `"Nothing to redo."`); on success they mutate `state.undoStack`/`state.redoStack` + the live grid. Callers call `updateUI()` after.
 
 ### `sim.js`
 `normalizeWrappedCoord`, `normalizeKeyForState`, `computeNeighborCountMap`, `animateDeaths`, `updateFadeAnimations`, `stepSimulation`, `resetSimulation`, `randomFill`, `addCells`, `commitStroke`, `updateSimulation`
 
-`randomFill(visibleBounds)` takes the wrap-off viewport as a required parameter (throws if `state.wrap` is false and `visibleBounds` is missing). Returns `{ message }` so the caller can surface the toast.
+`randomFill(visibleBounds)` takes the wrap-off viewport as a required parameter (throws if `state.wrap` is false and `visibleBounds` is missing). No return value. The caller is responsible for surfacing the "Filled the active field at 25% density." toast — `sim.js` cannot import from `ui.js` per the middle-layer invariant.
 
 ### `tools.js`
 `getCurrentPattern`, `getPatternCenter`, `getPatternOffsetCells`, `dedupeCells`, `buildLineCells`, `buildBoxCells`, `buildCircleCells`, `getToolCells`, `setTool`, `selectPattern`

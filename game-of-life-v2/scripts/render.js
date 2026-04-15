@@ -13,9 +13,16 @@ export function ensureCanvasSize() {
   canvas.width = Math.max(1, Math.floor(clientWidth * dpr));
   canvas.height = Math.max(1, Math.floor(clientHeight * dpr));
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  sparklineCanvas.width = Math.floor(sparklineCanvas.clientWidth * dpr);
-  sparklineCanvas.height = Math.floor(sparklineCanvas.clientHeight * dpr);
-  sparkCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // Skip the sparkline resize while its popover is hidden (clientW/H === 0):
+  // writing 0 to canvas.width would wipe the DPR transform, and clamping to 1
+  // leaves a 1×1 backing store in place once the popover becomes visible.
+  // Re-sizing happens either on the next window resize while visible or via
+  // showSparklinePopover() which calls ensureCanvasSize again.
+  if (sparklineCanvas.clientWidth > 0 && sparklineCanvas.clientHeight > 0) {
+    sparklineCanvas.width = Math.floor(sparklineCanvas.clientWidth * dpr);
+    sparklineCanvas.height = Math.floor(sparklineCanvas.clientHeight * dpr);
+    sparkCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
 }
 
 export function worldToScreen(x, y) {
@@ -186,8 +193,14 @@ export function drawSparkline() {
   });
   sparkCtx.stroke();
   sparkCtx.fillStyle = `rgba(${getTheme().colors.accentRgb}, 0.12)`;
+  sparkCtx.beginPath();
+  sparkCtx.moveTo(0, height);
+  values.forEach((value, index) => {
+    const x = (index / Math.max(1, values.length - 1)) * width;
+    const y = height - (value / max) * (height - 8) - 4;
+    sparkCtx.lineTo(x, y);
+  });
   sparkCtx.lineTo(width, height);
-  sparkCtx.lineTo(0, height);
   sparkCtx.closePath();
   sparkCtx.fill();
 }

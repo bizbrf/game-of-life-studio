@@ -65,7 +65,9 @@ export function commitDiffFromMaps(beforeMap, afterMap, label) {
     const after = afterMap.get(key) || 0;
     if (before !== after) diff.push({ key, before, after });
   });
+  if (!diff.length) return false;
   pushUndoEntry(diff, label);
+  return true;
 }
 
 function applyUndoEntry(entry, direction) {

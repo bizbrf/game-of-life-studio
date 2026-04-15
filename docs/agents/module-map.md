@@ -52,7 +52,7 @@ Minimal list to help agents pick the right module without reading every file. Wh
 `setCellAge`, `pushPopulation`, `captureSnapshot`, `pushSimulationSnapshot`, `restoreSnapshot`, `truncateHistoryToCursor`, `pushUndoEntry`, `commitDiffFromMaps`, `undo`, `redo`
 
 ### `sim.js`
-`normalizeWrappedCoord`, `normalizeKeyForState`, `computeNeighborCountMap`, `animateDeaths`, `updateFadeAnimations`, `stepSimulation`, `resetSimulation`, `randomFill`, `addCells`, `updateSimulation`
+`normalizeWrappedCoord`, `normalizeKeyForState`, `computeNeighborCountMap`, `animateDeaths`, `updateFadeAnimations`, `stepSimulation`, `resetSimulation`, `randomFill`, `addCells`, `commitStroke`, `updateSimulation`
 
 ### `tools.js`
 `getCurrentPattern`, `getPatternCenter`, `getPatternOffsetCells`, `dedupeCells`, `buildLineCells`, `buildBoxCells`, `buildCircleCells`, `getToolCells`, `setTool`, `selectPattern`

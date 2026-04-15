@@ -6,7 +6,7 @@ import { clamp, xyFromKey } from "./utils.js";
 import { applyRule } from "./rules.js";
 import { setTheme, getTheme } from "./themes.js";
 import { restoreSnapshot, pushSimulationSnapshot, undo, redo } from "./history.js";
-import { stepSimulation, resetSimulation, randomFill, updateSimulation } from "./sim.js";
+import { stepSimulation, resetSimulation, randomFill, updateSimulation, commitStroke } from "./sim.js";
 import { getCurrentPattern } from "./tools.js";
 import { syncAudioState } from "./audio.js";
 import {
@@ -139,6 +139,10 @@ function bindEvents() {
       const touch = event.touches[0];
       beginInteraction("paint", touch.clientX, touch.clientY, 0);
     } else if (event.touches.length === 2) {
+      if (state.interaction && state.interaction.strokeBefore) {
+        const label = state.interaction.type === "draw-paint" ? "Paint stroke" : "Erase stroke";
+        commitStroke(state.interaction.strokeBefore, label);
+      }
       const [a, b] = event.touches;
       state.interaction = {
         type: "touch-panzoom",

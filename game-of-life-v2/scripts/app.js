@@ -7,7 +7,7 @@ import { applyRule } from "./rules.js";
 import { setTheme, getTheme } from "./themes.js";
 import { restoreSnapshot, pushSimulationSnapshot, undo, redo } from "./history.js";
 import { stepSimulation, resetSimulation, randomFill, updateSimulation, commitStroke } from "./sim.js";
-import { getCurrentPattern } from "./tools.js";
+import { getCurrentPattern, setTool } from "./tools.js";
 import { syncAudioState } from "./audio.js";
 import {
   ensureCanvasSize,
@@ -30,6 +30,8 @@ import {
   copyText,
   openModal,
   closeModal,
+  closeTopModal,
+  isModalOpen,
   adjustSpeed,
   hexToRgb,
   toggleSpeedPopover,
@@ -37,6 +39,7 @@ import {
   closeRulePopover,
   closeInspector,
   toggleInspector,
+  cycleTheme,
   showSparklinePopover,
   hideSparklinePopover,
 } from "./ui.js";
@@ -46,7 +49,6 @@ import {
   endInteraction,
   zoomAt,
   autoFit,
-  handleKeydown,
 } from "./input.js";
 
 // Orchestrator helper: applies a rule change coming from a user action and
@@ -58,6 +60,94 @@ function applyRuleAndToast(ruleString) {
   else showToast(`Ruleset set to ${result.rule}`);
   updateUI();
   return result;
+}
+
+// Keyboard shortcuts live here (not in input.js) so input.js stays free of
+// ui.js / audio.js / history.js upward imports. app.js is the legitimate
+// orchestrator that can talk to every module.
+function handleKeydown(event) {
+  if (event.target && ["INPUT", "TEXTAREA", "SELECT"].includes(event.target.tagName)) {
+    if (event.key === "Escape") event.target.blur();
+    return;
+  }
+  // When a modal is open, let the modal's own Tab-trap handler drive focus.
+  // Without this guard, the document-level Tab case below would also fire
+  // selectPattern + preventDefault on every Tab, breaking the trap and
+  // quietly mutating state.patternIndex.
+  if (event.key === "Tab" && isModalOpen()) return;
+  if (event.key === "Escape") {
+    event.preventDefault();
+    // Close the topmost overlay first: modal > inspector > popover. Modals
+    // and inspector sit ABOVE popovers in the visual / semantic stack, so
+    // Escape must peel them off before touching a background popover.
+    if (closeTopModal()) return;
+    if (state.inspectorOpen) { closeInspector(); return; }
+    if (els.rulePopover && els.rulePopover.classList.contains("visible")) {
+      closeRulePopover();
+      return;
+    }
+    if (els.speedPopover && els.speedPopover.classList.contains("visible")) {
+      closeSpeedPopover({ restoreFocus: false });
+      return;
+    }
+  }
+  // While a modal is open, the document-level global shortcuts (Space, R,
+  // F, G, W, T, 1-6, Tab, Ctrl+K/Z) must not fire — they would mutate sim
+  // state from behind the dialog and hijack Space/Enter activations on the
+  // modal's focused button.
+  if (isModalOpen()) return;
+  if ((event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === "k") {
+    event.preventDefault();
+    toggleInspector();
+    return;
+  }
+  if ((event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === "z") {
+    event.preventDefault();
+    const result = undo();
+    if (!result.success) showToast(result.message);
+    updateUI();
+    return;
+  }
+  if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === "z") {
+    event.preventDefault();
+    const result = redo();
+    if (!result.success) showToast(result.message);
+    updateUI();
+    return;
+  }
+  switch (event.key) {
+    case " ": event.preventDefault(); state.simulating = !state.simulating; syncAudioState(); break;
+    case "n": case "N": if (!state.simulating) stepSimulation(); break;
+    case "r": case "R": resetSimulation(); break;
+    case "f": case "F": showToast(randomFill().message); break;
+    case "g": case "G": state.gridLines = !state.gridLines; break;
+    case "w": case "W": state.wrap = !state.wrap; break;
+    case "t": case "T": cycleTheme(); break;
+    case "h": case "H":
+      state.modals.has("help-modal") ? closeModal("help-modal") : openModal("help-modal");
+      break;
+    case "?": event.preventDefault(); openModal("help-modal"); break;
+    case "Tab":
+      event.preventDefault();
+      // Lazy import avoids a load-order cycle with tools.js
+      import("./tools.js").then(({ selectPattern }) => {
+        selectPattern(state.patternIndex + (event.shiftKey ? -1 : 1), true);
+        updateUI();
+      });
+      break;
+    case "+": case "=": adjustSpeed(2); break;
+    case "-": case "_": adjustSpeed(-2); break;
+    case "[": adjustSpeed(-1); break;
+    case "]": adjustSpeed(1); break;
+    case "1": setTool("freehand"); break;
+    case "2": setTool("eraser"); break;
+    case "3": setTool("stamp"); break;
+    case "4": setTool("line"); break;
+    case "5": setTool("box"); break;
+    case "6": setTool("circle"); break;
+    default: break;
+  }
+  updateUI();
 }
 
 function hydrateDomReferences() {
@@ -124,7 +214,7 @@ function bindEvents() {
     event.preventDefault();
     zoomAt(event.clientX, event.clientY, event.deltaY < 0 ? 1 : -1);
   }, { passive: false });
-  canvas.addEventListener("dblclick", (event) => { event.preventDefault(); autoFit(); });
+  canvas.addEventListener("dblclick", (event) => { event.preventDefault(); autoFit(); updateUI(); });
   canvas.addEventListener("pointerdown", (event) => {
     if (event.target !== canvas) return;
     canvas.setPointerCapture(event.pointerId);
@@ -287,7 +377,7 @@ function bindEvents() {
   els.statusPopToken.addEventListener("focusout", schedulePopHide);
 
   // ----- Inspector: Scene row -----
-  els.fitBtn.addEventListener("click", () => autoFit());
+  els.fitBtn.addEventListener("click", () => { autoFit(); updateUI(); });
   els.randomBtn.addEventListener("click", () => {
     const result = randomFill();
     showToast(result.message);

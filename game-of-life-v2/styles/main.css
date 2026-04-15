@@ -597,13 +597,15 @@ body.rewinding .status-strip .dot {
   display: none;
 }
 
-.inspector details > summary::after {
+/* Pseudo-content lives on a dedicated aria-hidden child so older screen
+   readers never announce the +/− glyph alongside the summary label. */
+.inspector details > summary > .summary-icon::after {
   content: "+";
   opacity: 0.55;
   font-size: 14px;
 }
 
-.inspector details[open] > summary::after {
+.inspector details[open] > summary > .summary-icon::after {
   content: "−";
 }
 
@@ -1051,5 +1053,23 @@ kbd {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Fallback for browsers without backdrop-filter support (Chrome < 76,
+   Firefox < 103). The glass surfaces rely on the blur for legibility;
+   without it the translucent surfaceStrong tokens would be hard to read
+   over the canvas. Fall back to the theme's opaque bg-2 on the main glass
+   panels so content still meets contrast requirements. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .status-strip,
+  .playback-pill,
+  .inspector,
+  .sparkline-popover,
+  .popover {
+    background: var(--bg-2);
+  }
+  .modal-backdrop {
+    background: rgba(3, 6, 12, 0.88);
   }
 }

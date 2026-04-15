@@ -3,7 +3,9 @@
 import { state, audioState } from "./state.js";
 
 export function getAudioContext() {
-  const Ctor = window.AudioContext || window.webkitAudioContext;
+  // Safari 14+ supports the unprefixed AudioContext; the webkitAudioContext
+  // fallback was dead code for all current targets.
+  const Ctor = window.AudioContext;
   if (!Ctor) return null;
   if (!audioState.context) audioState.context = new Ctor();
   return audioState.context;

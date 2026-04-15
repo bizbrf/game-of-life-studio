@@ -34,6 +34,7 @@ import {
   hexToRgb,
   toggleSpeedPopover,
   closeSpeedPopover,
+  closeRulePopover,
   closeInspector,
   toggleInspector,
   showSparklinePopover,
@@ -211,7 +212,11 @@ function bindEvents() {
   els.inspectorBackdrop.addEventListener("click", () => closeInspector());
 
   // ----- Status strip: rule popover + sparkline hover -----
+  // closeRulePopover is defined in ui.js so handleKeydown (which lives in
+  // input.js) can close the popover on Escape without a separate import here.
   els.statusRule.addEventListener("click", () => {
+    const alreadyOpen = els.rulePopover.classList.contains("visible");
+    if (alreadyOpen) { closeRulePopover(); return; }
     const rect = els.statusRule.getBoundingClientRect();
     els.rulePopover.innerHTML = "";
     RULESETS.forEach((ruleset) => {
@@ -221,40 +226,56 @@ function bindEvents() {
       opt.innerHTML = `<span>${ruleset.label}</span><span class="meta">${ruleset.rule}</span>`;
       opt.addEventListener("click", () => {
         applyRule(ruleset.rule, true);
-        els.rulePopover.classList.remove("visible");
+        closeRulePopover();
+        els.statusRule.focus();
         updateUI();
       });
       els.rulePopover.appendChild(opt);
     });
     const customRow = document.createElement("div");
     customRow.className = "custom-row";
-    customRow.innerHTML = `<input type="text" value="${state.rule}" spellcheck="false" placeholder="B/S notation">`;
+    customRow.innerHTML = `<input type="text" value="${state.rule}" spellcheck="false" placeholder="B/S notation" aria-label="Custom B/S rule">`;
     const input = customRow.querySelector("input");
     input.addEventListener("change", () => {
       applyRule(input.value, true);
-      els.rulePopover.classList.remove("visible");
+      closeRulePopover();
+      els.statusRule.focus();
       updateUI();
     });
     els.rulePopover.appendChild(customRow);
     els.rulePopover.style.left = `${rect.left}px`;
     els.rulePopover.style.top = `${rect.bottom + 8}px`;
     els.rulePopover.classList.add("visible");
+    els.statusRule.setAttribute("aria-expanded", "true");
+    // Move focus to the first option so keyboard users land inside the menu.
+    const firstOption = els.rulePopover.querySelector("button.option");
+    if (firstOption) firstOption.focus();
   });
-  els.statusRule.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" || event.key === " ") {
+  // Escape inside the rule popover closes it and returns focus to the trigger.
+  // Stop propagation so the document-level handleKeydown doesn't also run
+  // closeTopModal / closeInspector for the same keystroke.
+  els.rulePopover.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && els.rulePopover.classList.contains("visible")) {
       event.preventDefault();
-      els.statusRule.click();
+      event.stopPropagation();
+      closeRulePopover();
+      els.statusRule.focus();
     }
   });
 
   let popHoverTimer = null;
-  els.statusPopToken.addEventListener("mouseenter", () => {
+  function schedulePopShow() {
     popHoverTimer = setTimeout(() => showSparklinePopover(), 120);
-  });
-  els.statusPopToken.addEventListener("mouseleave", () => {
+  }
+  function schedulePopHide() {
     if (popHoverTimer) clearTimeout(popHoverTimer);
     setTimeout(() => hideSparklinePopover(), 80);
-  });
+  }
+  els.statusPopToken.addEventListener("mouseenter", schedulePopShow);
+  els.statusPopToken.addEventListener("mouseleave", schedulePopHide);
+  // Keyboard equivalents: focusing the pop token shows the popover.
+  els.statusPopToken.addEventListener("focusin", schedulePopShow);
+  els.statusPopToken.addEventListener("focusout", schedulePopHide);
 
   // ----- Inspector: Scene row -----
   els.fitBtn.addEventListener("click", () => autoFit());
@@ -353,12 +374,14 @@ function bindEvents() {
     if (els.speedPopover.classList.contains("visible")
         && !els.speedPopover.contains(event.target)
         && event.target !== els.speedChip) {
-      closeSpeedPopover();
+      // Outside-click: don't yank focus back to the chip — focus belongs
+      // wherever the user just clicked.
+      closeSpeedPopover({ restoreFocus: false });
     }
     if (els.rulePopover.classList.contains("visible")
         && !els.rulePopover.contains(event.target)
         && event.target !== els.statusRule) {
-      els.rulePopover.classList.remove("visible");
+      closeRulePopover();
     }
   });
 }
@@ -417,6 +440,12 @@ function initialize() {
   applyRule(state.rule);
   setTheme("obsidian", true);
   state.paletteId = getTheme().defaultPalette;
+  // Respect prefers-reduced-motion: disable floating background particles.
+  // CSS handles transitions / keyframes; this handles the JS-driven particle
+  // animation loop.
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    state.particles = false;
+  }
   pushSimulationSnapshot();
   bindEvents();
   updateUI();

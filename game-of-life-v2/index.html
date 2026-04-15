@@ -11,14 +11,18 @@
   <div id="app">
     <canvas id="life-canvas" aria-label="Game of Life canvas"></canvas>
 
-    <!-- STATUS STRIP -->
-    <div class="status-strip" id="status-strip" role="status" aria-live="polite">
+    <!-- STATUS STRIP
+         Intentionally NOT a live region: generation / population counts
+         update every frame, and an aria-live on the strip would spam screen
+         readers with "Gen 1001, Gen 1002, ..." at simulation speed. The
+         toast layer (below) carries all user-intent announcements. -->
+    <div class="status-strip" id="status-strip">
       <span class="dot" id="status-dot"></span>
-      <span class="rule-name" id="status-rule" role="button" tabindex="0">Conway</span>
+      <button class="rule-name" id="status-rule" type="button" aria-haspopup="dialog" aria-expanded="false">Conway</button>
       <span class="sep">·</span>
       <span>Gen <span id="status-gen">0</span></span>
       <span class="sep">·</span>
-      <span class="pop-token" id="status-pop-token">Pop <span id="status-pop">0</span></span>
+      <span class="pop-token" id="status-pop-token" tabindex="0" aria-label="Population — focus or hover to view recent history">Pop <span id="status-pop">0</span></span>
     </div>
 
     <!-- SPARKLINE POPOVER (anchored under status strip) -->
@@ -33,7 +37,7 @@
       <button class="pill-btn ghost" id="back-btn" type="button" aria-label="Step backward in history">⇤</button>
       <button class="pill-btn ghost" id="step-btn" type="button" aria-label="Step forward one generation">⇥</button>
       <div class="pill-divider"></div>
-      <button class="pill-btn speed-chip" id="speed-chip" type="button" aria-haspopup="true" aria-expanded="false">15/s</button>
+      <button class="pill-btn speed-chip" id="speed-chip" type="button" aria-haspopup="menu" aria-expanded="false">15/s</button>
       <div class="pill-divider"></div>
       <button class="pill-btn" id="inspector-toggle" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="inspector" aria-label="Open inspector">⚙</button>
     </div>
@@ -42,7 +46,10 @@
     <div class="popover" id="speed-popover" role="menu" aria-label="Simulation speed"></div>
 
     <!-- RULE POPOVER -->
-    <div class="popover" id="rule-popover" role="menu" aria-label="Rule presets"></div>
+    <!-- role="dialog" not "menu": contains both preset buttons AND a freeform
+         B/S input. ARIA menus expect only menuitems + arrow-key nav; mixed
+         content (menu + textbox) confuses assistive tech. Dialog allows both. -->
+    <div class="popover" id="rule-popover" role="dialog" aria-label="Rule presets"></div>
 
     <!-- SHORTCUT HINT -->
     <div class="shortcut-hint"><kbd>⌘K</kbd></div>

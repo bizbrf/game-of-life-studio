@@ -1,7 +1,7 @@
 // Pointer/touch/keyboard interaction, zoom, autoFit.
 
 import { BASE_CELL_SIZE, MIN_ZOOM, MAX_ZOOM } from "./constants.js";
-import { state, canvasRefs } from "./state.js";
+import { state, els, canvasRefs } from "./state.js";
 import { clamp, xyFromKey } from "./utils.js";
 import { getCurrentPattern, getPatternOffsetCells, getToolCells, setTool } from "./tools.js";
 import { addCells, commitStroke, stepSimulation, resetSimulation, randomFill } from "./sim.js";
@@ -17,6 +17,8 @@ import {
   cycleTheme,
   toggleInspector,
   closeInspector,
+  closeSpeedPopover,
+  closeRulePopover,
 } from "./ui.js";
 import { syncAudioState } from "./audio.js";
 
@@ -148,11 +150,37 @@ export function handleKeydown(event) {
     if (event.key === "Escape") event.target.blur();
     return;
   }
+  // When a modal is open, let the modal's own Tab-trap handler drive focus.
+  // Without this guard, the document-level Tab case below would also fire
+  // selectPattern + preventDefault on every Tab, breaking the trap and
+  // quietly mutating state.patternIndex.
+  if (event.key === "Tab" && isModalOpen()) return;
   if (event.key === "Escape") {
     event.preventDefault();
+    // Close the topmost overlay first: modal > inspector > popover. Modals
+    // and inspector sit ABOVE popovers in the visual / semantic stack, so
+    // Escape must peel them off before touching a background popover. The
+    // popover's own keydown handler (installed on openModal's trapped
+    // modal element) takes care of Escape while focus is INSIDE the
+    // popover; this branch catches the case where focus has left it.
     if (closeTopModal()) return;
     if (state.inspectorOpen) { closeInspector(); return; }
+    if (els.rulePopover && els.rulePopover.classList.contains("visible")) {
+      closeRulePopover();
+      return;
+    }
+    if (els.speedPopover && els.speedPopover.classList.contains("visible")) {
+      closeSpeedPopover({ restoreFocus: false });
+      return;
+    }
   }
+  // While a modal is open, the document-level global shortcuts
+  // (Space/play-pause, R/reset, F/fill, G/grid, W/wrap, T/theme, 1-6 tools,
+  // Tab/pattern-cycle, etc.) must not fire — they would mutate sim state
+  // from behind the dialog and hijack Space / Enter activations on the
+  // modal's focused button. Tab is already guarded above; short-circuit
+  // everything else here too.
+  if (isModalOpen()) return;
   if ((event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === "k") {
     event.preventDefault();
     toggleInspector();

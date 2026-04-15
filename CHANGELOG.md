@@ -22,6 +22,9 @@ The narrative dev log lives in [docs/journal.md](docs/journal.md). This file rec
 ### Removed
 - Ad-hoc iteration screenshots from `output/`; three canonical ones promoted to `docs/screenshots/`.
 
+### Accessibility
+- Batch 5: modal focus trap + return-to-trigger; inspector focus management; focus ring restored on `:focus-visible` (2px accent outline); `prefers-reduced-motion` support (CSS + JS particles); `aria-pressed` on behavior toggles; `status-rule` span → real `<button>` with `aria-haspopup="menu"` + `aria-expanded`; sparkline popover keyboard-accessible via `focusin`/`focusout` on `status-pop-token`; speed popover focuses first option on open and returns focus on Escape.
+
 <!--
 Release entries go above this line. Template:
 

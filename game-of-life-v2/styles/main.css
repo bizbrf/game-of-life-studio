@@ -109,6 +109,12 @@ body.rewinding .status-strip .dot {
 }
 
 .status-strip .rule-name {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  min-height: 0;
   cursor: pointer;
   color: var(--text);
   transition: color 140ms ease;
@@ -116,6 +122,8 @@ body.rewinding .status-strip .dot {
 
 .status-strip .rule-name:hover {
   color: rgba(var(--accent-rgb), 1);
+  background: none;
+  border-color: transparent;
 }
 
 .status-strip .sep {
@@ -777,8 +785,18 @@ button {
   transition: transform 140ms ease, background 180ms ease, border-color 180ms ease, opacity 180ms ease;
 }
 
-button:hover, button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible {
-  outline: none;
+button:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.16);
+}
+
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid rgba(var(--accent-rgb), 0.92);
+  outline-offset: 2px;
   background: rgba(255,255,255,0.1);
   border-color: rgba(255,255,255,0.16);
 }
@@ -1020,4 +1038,18 @@ kbd {
   .modal-grid, .shortcuts-grid, .input-grid { grid-template-columns: 1fr; }
   .modal-backdrop { padding: 12px; }
   .modal, .modal.large { width: 100%; max-height: 88vh; padding: 16px; }
+}
+
+/* Respect users who have opted into reduced motion: kill long transitions,
+   animations, and smooth scrolling. JS-driven background particles are also
+   gated on the same media query in app.js:initialize(). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

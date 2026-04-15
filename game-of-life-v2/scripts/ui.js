@@ -36,11 +36,53 @@ export async function copyText(text) {
 
 // ---------- Modals ----------
 
+// Selector for all elements the Tab key can reach inside a modal.
+const FOCUSABLE_SELECTOR =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), ' +
+  'textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled])';
+
+// Per-open-modal: remember the element that had focus and the Tab-trap
+// handler so closeModal can remove it cleanly. Stack supports nested modals.
+const modalFocusStack = [];
+
+function trapTabWithin(modal) {
+  return (event) => {
+    if (event.key !== "Tab") return;
+    // Re-query every Tab: modal contents may have changed (pattern browser,
+    // rule popover option rebuilds) since open time.
+    const focusables = modal.querySelectorAll(FOCUSABLE_SELECTOR);
+    if (!focusables.length) { event.preventDefault(); return; }
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const active = document.activeElement;
+    if (event.shiftKey && active === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && active === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+}
+
 export function openModal(id) {
+  // Idempotent: repeated open calls (e.g. `?` pressed while help modal is
+  // already open) must not stack duplicate Tab-trap handlers or focus
+  // snapshots on modalFocusStack. If the modal is already open, do nothing.
+  if (state.modals.has(id)) return;
   const modal = document.getElementById(id);
   modal.classList.add("open");
   modal.setAttribute("aria-hidden", "false");
   state.modals.add(id);
+
+  const lastFocused = document.activeElement;
+  const trapHandler = trapTabWithin(modal);
+  modal.addEventListener("keydown", trapHandler);
+
+  const firstFocusable = modal.querySelector(FOCUSABLE_SELECTOR);
+  if (firstFocusable) firstFocusable.focus();
+
+  modalFocusStack.push({ id, lastFocused, trapHandler });
 }
 
 export function closeModal(id) {
@@ -48,6 +90,22 @@ export function closeModal(id) {
   modal.classList.remove("open");
   modal.setAttribute("aria-hidden", "true");
   state.modals.delete(id);
+
+  // LIFO removal: peel off the topmost entry matching this id. Combined with
+  // openModal's idempotency guard, this keeps modalFocusStack a true stack
+  // even if some future path skips the guard.
+  for (let i = modalFocusStack.length - 1; i >= 0; i -= 1) {
+    if (modalFocusStack[i].id === id) {
+      const { lastFocused, trapHandler } = modalFocusStack[i];
+      modal.removeEventListener("keydown", trapHandler);
+      modalFocusStack.splice(i, 1);
+      if (lastFocused && typeof lastFocused.focus === "function"
+          && document.body.contains(lastFocused)) {
+        lastFocused.focus();
+      }
+      break;
+    }
+  }
 }
 
 export function closeTopModal() {
@@ -68,9 +126,25 @@ export function adjustSpeed(delta) {
   state.speed = clamp(Number(state.speed) + delta, 1, 60);
 }
 
-export function closeSpeedPopover() {
+// restoreFocus defaults to true for keyboard-driven close paths (option click,
+// Escape). Callers who dismiss for reasons outside the user's focus intent
+// (document-level outside-click, keyboard close from handleKeydown) should
+// pass false so focus stays on whatever the user actually clicked or where
+// the Escape handler already decided to put it.
+export function closeSpeedPopover({ restoreFocus = true } = {}) {
+  const hadFocusInside = els.speedPopover.contains(document.activeElement);
   els.speedPopover.classList.remove("visible");
   if (els.speedChip) els.speedChip.setAttribute("aria-expanded", "false");
+  if (restoreFocus && hadFocusInside && els.speedChip) els.speedChip.focus();
+}
+
+// Closes the rule popover (built in app.js) and resets status-rule's
+// aria-expanded. Exposed from ui.js so keyboard dispatch (handleKeydown)
+// can close the popover from outside it.
+export function closeRulePopover() {
+  if (!els.rulePopover) return;
+  els.rulePopover.classList.remove("visible");
+  if (els.statusRule) els.statusRule.setAttribute("aria-expanded", "false");
 }
 
 export function openSpeedPopover() {
@@ -80,6 +154,9 @@ export function openSpeedPopover() {
   els.speedPopover.style.bottom = `${window.innerHeight - rect.top + 10}px`;
   els.speedPopover.classList.add("visible");
   els.speedChip.setAttribute("aria-expanded", "true");
+  // Keyboard users land on the first option so Tab cycles inside the popover.
+  const firstOption = els.speedPopover.querySelector(".option");
+  if (firstOption) firstOption.focus();
 }
 
 export function toggleSpeedPopover() {
@@ -89,12 +166,18 @@ export function toggleSpeedPopover() {
 
 // ---------- Inspector drawer ----------
 
+// Remember which element had focus when the inspector opened, so
+// closeInspector can return to it. null when the drawer is closed.
+let inspectorLastFocused = null;
+
 export function openInspector() {
+  inspectorLastFocused = document.activeElement;
   state.inspectorOpen = true;
   els.inspector.classList.add("open");
   els.inspector.setAttribute("aria-hidden", "false");
   els.inspectorToggle.setAttribute("aria-expanded", "true");
   document.body.classList.add("inspector-open");
+  if (els.inspectorClose) els.inspectorClose.focus();
 }
 
 export function closeInspector() {
@@ -103,6 +186,11 @@ export function closeInspector() {
   els.inspector.setAttribute("aria-hidden", "true");
   els.inspectorToggle.setAttribute("aria-expanded", "false");
   document.body.classList.remove("inspector-open");
+  const target = (inspectorLastFocused && document.body.contains(inspectorLastFocused))
+    ? inspectorLastFocused
+    : els.inspectorToggle;
+  if (target && typeof target.focus === "function") target.focus();
+  inspectorLastFocused = null;
 }
 
 export function toggleInspector() {
@@ -225,6 +313,7 @@ export function setupUI() {
     button.type = "button";
     button.dataset.toggle = key;
     button.textContent = label;
+    button.setAttribute("aria-pressed", String(!!state[key]));
     button.addEventListener("click", () => {
       state[key] = !state[key];
       if (key === "sound") syncAudioState();
@@ -274,6 +363,17 @@ export function setupUI() {
   });
   els.speedPopover.appendChild(customRow);
 
+  // Escape inside the speed popover closes it and returns focus to the trigger.
+  // Stop propagation so the document-level handleKeydown doesn't also run
+  // closeTopModal / closeInspector for the same keystroke.
+  els.speedPopover.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && els.speedPopover.classList.contains("visible")) {
+      event.preventDefault();
+      event.stopPropagation();
+      closeSpeedPopover();
+    }
+  });
+
   renderPatternBrowser();
   renderPatternCard();
 }
@@ -315,7 +415,9 @@ export function updateUI() {
 
   // Behavior toggles
   Array.from(els.toggleButtons.children).forEach((btn) => {
-    btn.classList.toggle("active", !!state[btn.dataset.toggle]);
+    const pressed = !!state[btn.dataset.toggle];
+    btn.classList.toggle("active", pressed);
+    btn.setAttribute("aria-pressed", String(pressed));
   });
 
   // Theme swatches

@@ -26,12 +26,12 @@ import {
   updateUI,
   updatePerformanceCounters,
   renderPatternBrowser,
+  applyThemeToDOM,
   showToast,
   copyText,
   openModal,
   closeModal,
   adjustSpeed,
-  hexToRgb,
   toggleSpeedPopover,
   closeSpeedPopover,
   closeRulePopover,
@@ -302,9 +302,7 @@ function bindEvents() {
   els.accentPicker.addEventListener("input", () => {
     state.accent = els.accentPicker.value;
     state.paletteId = "custom";
-    const { r, g, b } = hexToRgb(state.accent);
-    document.documentElement.style.setProperty("--accent", state.accent);
-    document.documentElement.style.setProperty("--accent-rgb", `${r}, ${g}, ${b}`);
+    applyThemeToDOM();
     updateUI();
     renderPatternBrowser();
   });
@@ -342,7 +340,14 @@ function bindEvents() {
     catch (error) { showToast(error.message || "RLE import failed."); }
   });
   els.importJsonBtn.addEventListener("click", () => {
-    try { importJson(els.importText.value); showToast("JSON imported."); updateUI(); }
+    try {
+      importJson(els.importText.value);
+      // importJson can call setTheme (state only); project the theme to DOM
+      // so the CSS variables follow the imported theme.
+      applyThemeToDOM();
+      showToast("JSON imported.");
+      updateUI();
+    }
     catch (error) { showToast(error.message || "JSON import failed."); }
   });
   els.uploadBtn.addEventListener("click", () => els.fileInput.click());
@@ -440,6 +445,7 @@ function initialize() {
   applyRule(state.rule);
   setTheme("obsidian", true);
   state.paletteId = getTheme().defaultPalette;
+  applyThemeToDOM();
   // Respect prefers-reduced-motion: disable floating background particles.
   // CSS handles transitions / keyframes; this handles the JS-driven particle
   // animation loop.

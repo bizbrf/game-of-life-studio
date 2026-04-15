@@ -9,12 +9,14 @@ import { getCurrentPattern, getPatternOffsetCells, getToolCells } from "./tools.
 import { addCells, commitStroke } from "./sim.js";
 import { screenToWorld } from "./render.js";
 
-// Right-click tap vs. drag threshold. Below this many pixels of movement
-// we treat the gesture as a single-cell erase; above, we convert it to a
-// canvas pan. 6px matches the browser's native click-vs-drag feel and is
-// generous enough that an accidental tremor during a right-click tap
-// doesn't get misread as a pan.
-const PAN_DRAG_THRESHOLD_SQ = 36;
+// Right-click tap vs. drag threshold. A movement of more than 6 px
+// converts the gesture from a single-cell erase into a canvas pan. 6 px
+// matches the browser's native click-vs-drag feel and is generous enough
+// that an accidental tremor during a right-click tap doesn't get misread
+// as a pan. Squared because updateInteraction compares dx²+dy² to avoid
+// a per-frame sqrt.
+const PAN_DRAG_THRESHOLD_PX = 6;
+const PAN_DRAG_THRESHOLD_SQ = PAN_DRAG_THRESHOLD_PX * PAN_DRAG_THRESHOLD_PX;
 
 export function beginInteraction(kind, clientX, clientY, button = 0) {
   if (state.modals.size > 0) return;
@@ -34,9 +36,11 @@ export function beginInteraction(kind, clientX, clientY, button = 0) {
   }
   if (kind === "erase") {
     // Tentative: a short right-click tap erases one cell (committed in
-    // endInteraction); a drag past PAN_DRAG_THRESHOLD_SQ converts to pan.
+    // endInteraction); a drag past PAN_DRAG_THRESHOLD_PX converts to pan.
     // Keeps the prior "right-click = erase" shortcut while adding the
-    // map-UI convention of right-drag to pan.
+    // map-UI convention of right-drag to pan. Cursor stays `crosshair`
+    // until we actually convert to pan — switching to `grabbing` on every
+    // right-click would mislead users who just want to tap-erase.
     state.interaction = {
       type: "erase-or-pan",
       startClientX: clientX,
@@ -46,7 +50,6 @@ export function beginInteraction(kind, clientX, clientY, button = 0) {
       start: world,
       button,
     };
-    canvas.style.cursor = "grabbing";
     return;
   }
   // Left-click with eraser tool active erases without the tap/drag
@@ -79,9 +82,12 @@ export function updateInteraction(clientX, clientY) {
     const dy = clientY - state.interaction.startClientY;
     if (dx * dx + dy * dy <= PAN_DRAG_THRESHOLD_SQ) return;
     // Drag exceeded the threshold — commit to pan for the rest of this
-    // gesture. Fall through to the pan branch below so this tick moves
-    // the camera instead of waiting for the next mousemove.
+    // gesture. Flip the cursor now (we held off in beginInteraction so a
+    // tap-erase wouldn't flash the pan cursor), then fall through to the
+    // pan branch below so this tick moves the camera instead of waiting
+    // for the next mousemove.
     state.interaction.type = "pan";
+    canvas.style.cursor = "grabbing";
   }
   if (state.interaction.type === "pan") {
     const size = BASE_CELL_SIZE * state.camera.zoom;

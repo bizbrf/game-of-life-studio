@@ -117,13 +117,25 @@ export function adjustSpeed(delta) {
   state.speed = clamp(Number(state.speed) + delta, 1, 60);
 }
 
-export function closeSpeedPopover() {
+// restoreFocus defaults to true for keyboard-driven close paths (option click,
+// Escape). Callers who dismiss for reasons outside the user's focus intent
+// (document-level outside-click, keyboard close from handleKeydown) should
+// pass false so focus stays on whatever the user actually clicked or where
+// the Escape handler already decided to put it.
+export function closeSpeedPopover({ restoreFocus = true } = {}) {
   const hadFocusInside = els.speedPopover.contains(document.activeElement);
   els.speedPopover.classList.remove("visible");
   if (els.speedChip) els.speedChip.setAttribute("aria-expanded", "false");
-  // Return focus to the trigger only if the user was navigating inside the
-  // popover — avoid stealing focus on outside-click dismissal.
-  if (hadFocusInside && els.speedChip) els.speedChip.focus();
+  if (restoreFocus && hadFocusInside && els.speedChip) els.speedChip.focus();
+}
+
+// Closes the rule popover (built in app.js) and resets status-rule's
+// aria-expanded. Exposed from ui.js so keyboard dispatch (handleKeydown)
+// can close the popover from outside it.
+export function closeRulePopover() {
+  if (!els.rulePopover) return;
+  els.rulePopover.classList.remove("visible");
+  if (els.statusRule) els.statusRule.setAttribute("aria-expanded", "false");
 }
 
 export function openSpeedPopover() {

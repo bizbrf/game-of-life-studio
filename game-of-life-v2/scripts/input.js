@@ -1,7 +1,7 @@
 // Pointer/touch/keyboard interaction, zoom, autoFit.
 
 import { BASE_CELL_SIZE, MIN_ZOOM, MAX_ZOOM } from "./constants.js";
-import { state, canvasRefs } from "./state.js";
+import { state, els, canvasRefs } from "./state.js";
 import { clamp, xyFromKey } from "./utils.js";
 import { getCurrentPattern, getPatternOffsetCells, getToolCells, setTool } from "./tools.js";
 import { addCells, commitStroke, stepSimulation, resetSimulation, randomFill } from "./sim.js";
@@ -17,6 +17,8 @@ import {
   cycleTheme,
   toggleInspector,
   closeInspector,
+  closeSpeedPopover,
+  closeRulePopover,
 } from "./ui.js";
 import { syncAudioState } from "./audio.js";
 
@@ -152,6 +154,18 @@ export function handleKeydown(event) {
   if (event.key === "Tab" && isModalOpen()) return;
   if (event.key === "Escape") {
     event.preventDefault();
+    // Close visible popovers first — they're above modals/inspector in the
+    // visual stack. Popover internal keydown listeners handle Escape while
+    // focus is inside them; this branch catches the case where focus has
+    // left the popover but the popover is still visible.
+    if (els.rulePopover && els.rulePopover.classList.contains("visible")) {
+      closeRulePopover();
+      return;
+    }
+    if (els.speedPopover && els.speedPopover.classList.contains("visible")) {
+      closeSpeedPopover({ restoreFocus: false });
+      return;
+    }
     if (closeTopModal()) return;
     if (state.inspectorOpen) { closeInspector(); return; }
   }

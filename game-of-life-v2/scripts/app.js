@@ -34,6 +34,7 @@ import {
   hexToRgb,
   toggleSpeedPopover,
   closeSpeedPopover,
+  closeRulePopover,
   closeInspector,
   toggleInspector,
   showSparklinePopover,
@@ -211,10 +212,8 @@ function bindEvents() {
   els.inspectorBackdrop.addEventListener("click", () => closeInspector());
 
   // ----- Status strip: rule popover + sparkline hover -----
-  function closeRulePopover() {
-    els.rulePopover.classList.remove("visible");
-    els.statusRule.setAttribute("aria-expanded", "false");
-  }
+  // closeRulePopover is defined in ui.js so handleKeydown (which lives in
+  // input.js) can close the popover on Escape without a separate import here.
   els.statusRule.addEventListener("click", () => {
     const alreadyOpen = els.rulePopover.classList.contains("visible");
     if (alreadyOpen) { closeRulePopover(); return; }
@@ -375,7 +374,9 @@ function bindEvents() {
     if (els.speedPopover.classList.contains("visible")
         && !els.speedPopover.contains(event.target)
         && event.target !== els.speedChip) {
-      closeSpeedPopover();
+      // Outside-click: don't yank focus back to the chip — focus belongs
+      // wherever the user just clicked.
+      closeSpeedPopover({ restoreFocus: false });
     }
     if (els.rulePopover.classList.contains("visible")
         && !els.rulePopover.contains(event.target)

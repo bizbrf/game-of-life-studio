@@ -87,22 +87,47 @@ export function drawRoundedRect(context, x, y, width, height, radius, fillStyle,
   context.restore();
 }
 
+// Background gradient cache — keyed by (themeId, width, height). Theme
+// switches and canvas resizes are the only real invalidation triggers;
+// without the cache we allocated a new gradient + 2 colorstops every frame.
+let cachedBgGradient = null;
+let cachedBgGradientKey = "";
+
 function drawBackgroundAtmosphere() {
   const { canvas, ctx } = canvasRefs;
   const theme = getTheme();
-  const gradient = ctx.createLinearGradient(0, 0, canvas.clientWidth, canvas.clientHeight);
-  gradient.addColorStop(0, theme.colors.bg);
-  gradient.addColorStop(1, theme.colors.bg2);
-  ctx.fillStyle = gradient;
+  const key = `${theme.id}|${canvas.clientWidth}|${canvas.clientHeight}`;
+  if (key !== cachedBgGradientKey || !cachedBgGradient) {
+    cachedBgGradient = ctx.createLinearGradient(0, 0, canvas.clientWidth, canvas.clientHeight);
+    cachedBgGradient.addColorStop(0, theme.colors.bg);
+    cachedBgGradient.addColorStop(1, theme.colors.bg2);
+    cachedBgGradientKey = key;
+  }
+  ctx.fillStyle = cachedBgGradient;
   ctx.fillRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+}
+
+// Particle fillStyle strings are cached on the particle itself (one per
+// particle — their alphas are fixed at build time) and rebuilt when the
+// theme changes. Without the cache each of 28 particles allocated a fresh
+// `rgba(r,g,b,a)` template literal every frame.
+let particlesCacheThemeId = null;
+
+function ensureParticleStyles(themeId) {
+  if (themeId === particlesCacheThemeId) return;
+  const accentRgb = getTheme().colors.accentRgb;
+  state.particlesState.forEach((particle) => {
+    particle.fillStyle = `rgba(${accentRgb},${particle.alpha})`;
+  });
+  particlesCacheThemeId = themeId;
 }
 
 function drawParticles() {
   const { canvas, ctx } = canvasRefs;
+  ensureParticleStyles(getTheme().id);
   ctx.save();
-  const accent = `rgba(${getTheme().colors.accentRgb},`;
   state.particlesState.forEach((particle) => {
-    ctx.fillStyle = `${accent}${particle.alpha})`;
+    ctx.fillStyle = particle.fillStyle;
     ctx.beginPath();
     ctx.arc(particle.x * canvas.clientWidth, particle.y * canvas.clientHeight, particle.size, 0, Math.PI * 2);
     ctx.fill();
@@ -114,7 +139,10 @@ function drawGrid() {
   const { canvas, ctx } = canvasRefs;
   const bounds = visibleWorldBounds(1);
   ctx.save();
-  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--grid-line").trim();
+  // Read the grid-line color from the active theme rather than round-tripping
+  // through getComputedStyle each frame — setTheme already stores the canonical
+  // value on theme.colors.gridLine and pushes it to --grid-line for CSS.
+  ctx.strokeStyle = getTheme().colors.gridLine;
   ctx.lineWidth = Math.max(0.5, Math.min(1, state.camera.zoom * 0.8));
   ctx.beginPath();
   for (let x = bounds.minX; x <= bounds.maxX; x += 1) {
@@ -180,7 +208,10 @@ function drawGhostPreview() {
   const cellSize = BASE_CELL_SIZE * state.camera.zoom;
   const size = Math.max(2, cellSize - 1);
   const radius = Math.max(2, Math.min(6, size * 0.2));
-  const accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
+  // Same reasoning as drawGrid: skip the getComputedStyle round-trip.
+  // state.accent is the authoritative accent when the user has set a custom
+  // palette; otherwise fall back to the theme's default accent.
+  const accent = state.paletteId === "custom" ? state.accent : getTheme().colors.accent;
   previewCells.forEach(([x, y]) => {
     const point = worldToScreen(x, y);
     drawRoundedRect(ctx, point.x + 0.5, point.y + 0.5, size, size, radius, accent, pulse);
@@ -194,7 +225,12 @@ export function drawSparkline() {
   sparkCtx.clearRect(0, 0, width, height);
   if (state.populationHistory.length < 2) return;
   const values = state.populationHistory.slice(-MAX_SPARKLINE_POINTS);
-  const max = Math.max(...values, 1);
+  // Manual max loop — avoids spreading a 200-element array into function
+  // arguments (Math.max slow path on V8).
+  let max = 1;
+  for (let i = 0; i < values.length; i += 1) {
+    if (values[i] > max) max = values[i];
+  }
   sparkCtx.strokeStyle = `rgba(${getTheme().colors.accentRgb}, 0.92)`;
   sparkCtx.lineWidth = 2;
   sparkCtx.beginPath();

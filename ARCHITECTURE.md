@@ -72,7 +72,7 @@ active interaction ("paint" | "erase" | "pan" | "tool-line" | "tool-box" | "tool
 idle
 ```
 
-`app.js` binds the raw DOM events and calls into `input.js`. Keyboard shortcuts are centralised in `input.handleKeydown`.
+`app.js` binds the raw DOM events, runs the keyboard-shortcut dispatch (`handleKeydown`), and calls into `input.js` for pointer / touch translation and camera math. Keeping keyboard dispatch in `app.js` is what lets `input.js` stay free of upward imports into `ui.js`, `audio.js`, and `history.js`.
 
 ## Invariants — do not break
 
@@ -85,8 +85,11 @@ idle
 
 ## Known warts
 
-- **`rules.js` imports `showToast` from `ui.js`** — violates the dependency direction (rule logic pulling UI). Noted in [ADR-0003](docs/adr/0003-module-split-boundaries.md) as a future cleanup. Do not propagate the pattern to other modules.
 - **`state.js` mixes app-wide simulation state with DOM-ref caches (`els`, `canvasRefs`).** Functional, but the shape signals two different concerns. Splitting is a cycle-D candidate.
+- **`sim.randomFill` calls `render.visibleWorldBounds`** — same-layer dependency; `randomFill` needs the visible viewport when wrap is off. Candidate for extraction to a pure helper; tracked in Batch 4 of the review.
+- **`themes.js` writes CSS custom properties directly to `document.documentElement`**, and `render.js` reads them back via `getComputedStyle` each frame — violates the "DOM access lives in `app.js` / `ui.js`" invariant. Tracked in Batch 4.
+
+Historical: `rules.js → ui.js` (showToast) was documented here as the one known exception. It was resolved in Batch 1 — middle-layer modules now return result objects and callers in `app.js` / `ui.js` surface toasts and call `updateUI`. See [ADR-0003](docs/adr/0003-module-split-boundaries.md).
 
 ## Cross-cutting concerns
 

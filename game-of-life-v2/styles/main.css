@@ -882,7 +882,7 @@ kbd {
   padding: 12px;
   border-radius: 12px;
   background: var(--surface-soft);
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
   display: grid;
   gap: 10px;
 }
@@ -890,7 +890,11 @@ kbd {
 .shortcut-card {
   padding: 12px;
   border-radius: 12px;
-  background: var(--surface);
+  /* Use surfaceStrong (same as parent modal) so the card reads as
+     "grouped content within the modal" rather than visually recessed.
+     Lighter alpha than the modal lets the canvas bleed through more,
+     which reads as a pit instead of a card at the token-stack composite. */
+  background: var(--surface-strong);
   border: 1px solid var(--border);
   display: grid;
   gap: 10px;
@@ -905,7 +909,9 @@ kbd {
 .modal .pattern-card {
   padding: 12px;
   border-radius: 12px;
-  background: var(--surface);
+  /* Matches .shortcut-card reasoning: surfaceStrong keeps cards at the
+     same visual elevation as the parent modal. */
+  background: var(--surface-strong);
   border: 1px solid var(--border);
   display: grid;
   gap: 10px;

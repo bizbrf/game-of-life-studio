@@ -72,6 +72,10 @@ export function visibleWorldBounds(padding = 3) {
   };
 }
 
+// Single-cell rounded-rect. Kept for external callers like drawPatternPreview
+// that only fill one cell per call. The main draw loop (drawCells /
+// drawGhostPreview) uses the bucketed path below to amortize save/restore
+// and fillStyle writes across many cells.
 export function drawRoundedRect(context, x, y, width, height, radius, fillStyle, alpha = 1) {
   context.save();
   context.globalAlpha = alpha;
@@ -85,6 +89,19 @@ export function drawRoundedRect(context, x, y, width, height, radius, fillStyle,
   context.closePath();
   context.fill();
   context.restore();
+}
+
+// Append the path for a rounded rect to the current ctx path without
+// touching fillStyle, globalAlpha, save/restore, or fill. Used by the
+// bucketed drawCells / drawGhostPreview paths to build one compound path
+// per color+alpha bucket.
+function addRoundedRectPath(context, x, y, width, height, radius) {
+  context.moveTo(x + radius, y);
+  context.arcTo(x + width, y, x + width, y + height, radius);
+  context.arcTo(x + width, y + height, x, y + height, radius);
+  context.arcTo(x, y + height, x, y, radius);
+  context.arcTo(x, y, x + width, y, radius);
+  context.closePath();
 }
 
 // Background gradient cache — keyed by (themeId, width, height). Theme
@@ -187,20 +204,61 @@ function drawCells() {
   const size = Math.max(2, cellSize - 1);
   const radius = Math.max(2, Math.min(6, size * 0.2));
   const bounds = visibleWorldBounds(2);
+
+  // Bucket cells by (color, alpha) so we can emit one compound path +
+  // one fill per bucket instead of per-cell save/restore. For live cells
+  // the mapping age → (colorIndex, alpha) is deterministic (see alpha
+  // formula in the inner loop), so bucketing by age is equivalent.
+  // For fading cells alpha is continuous, so we quantize to 0.05 steps.
+  const liveByAge = new Map();
   for (const [key, age] of state.liveCells.entries()) {
     const [x, y] = xyFromKey(key);
     if (x < bounds.minX || x > bounds.maxX || y < bounds.minY || y > bounds.maxY) continue;
     const point = worldToScreen(x, y);
-    const color = palette[Math.min(palette.length - 1, age - 1)];
-    drawRoundedRect(ctx, point.x + 0.5, point.y + 0.5, size, size, radius, color, Math.min(1, 0.35 + age * 0.08));
+    let bucket = liveByAge.get(age);
+    if (!bucket) {
+      const colorIdx = Math.min(palette.length - 1, age - 1);
+      const alpha = Math.min(1, 0.35 + age * 0.08);
+      bucket = { color: palette[colorIdx], alpha, points: [] };
+      liveByAge.set(age, bucket);
+    }
+    bucket.points.push(point);
   }
+
+  const fadeBuckets = new Map();
   for (const [key, fading] of state.fadingCells.entries()) {
     const [x, y] = xyFromKey(key);
     if (x < bounds.minX || x > bounds.maxX || y < bounds.minY || y > bounds.maxY) continue;
+    const alphaExact = Math.max(0, fading.alpha * 0.55);
+    if (alphaExact <= 0) continue;
     const point = worldToScreen(x, y);
-    const color = palette[Math.min(palette.length - 1, Math.max(0, fading.age - 1))];
-    drawRoundedRect(ctx, point.x + 0.5, point.y + 0.5, size, size, radius, color, Math.max(0, fading.alpha * 0.55));
+    const colorIdx = Math.min(palette.length - 1, Math.max(0, fading.age - 1));
+    // 0.05 quantization → at most 20 alpha tiers per color, so worst-case
+    // 20 × palette.length buckets. In practice fades clear in < 0.5s so
+    // bucket count is much smaller than live-cell count.
+    const alphaKey = Math.round(alphaExact * 20) / 20;
+    const bucketKey = `${colorIdx}|${alphaKey}`;
+    let bucket = fadeBuckets.get(bucketKey);
+    if (!bucket) {
+      bucket = { color: palette[colorIdx], alpha: alphaKey, points: [] };
+      fadeBuckets.set(bucketKey, bucket);
+    }
+    bucket.points.push(point);
   }
+
+  ctx.save();
+  const flush = (bucket) => {
+    ctx.globalAlpha = bucket.alpha;
+    ctx.fillStyle = bucket.color;
+    ctx.beginPath();
+    for (const point of bucket.points) {
+      addRoundedRectPath(ctx, point.x + 0.5, point.y + 0.5, size, size, radius);
+    }
+    ctx.fill();
+  };
+  for (const bucket of liveByAge.values()) flush(bucket);
+  for (const bucket of fadeBuckets.values()) flush(bucket);
+  ctx.restore();
 }
 
 function getPreviewCells() {
@@ -226,10 +284,17 @@ function drawGhostPreview() {
   // state.accent is the authoritative accent when the user has set a custom
   // palette; otherwise fall back to the theme's default accent.
   const accent = state.paletteId === "custom" ? state.accent : getTheme().colors.accent;
+  // One color, one alpha — batch all ghost cells into a single path + fill.
+  ctx.save();
+  ctx.globalAlpha = pulse;
+  ctx.fillStyle = accent;
+  ctx.beginPath();
   previewCells.forEach(([x, y]) => {
     const point = worldToScreen(x, y);
-    drawRoundedRect(ctx, point.x + 0.5, point.y + 0.5, size, size, radius, accent, pulse);
+    addRoundedRectPath(ctx, point.x + 0.5, point.y + 0.5, size, size, radius);
   });
+  ctx.fill();
+  ctx.restore();
 }
 
 export function drawSparkline() {

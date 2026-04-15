@@ -208,19 +208,25 @@ function drawCells() {
   // Bucket cells by (color, alpha) so we can emit one compound path +
   // one fill per bucket instead of per-cell save/restore. For live cells
   // the mapping age → (colorIndex, alpha) is deterministic (see alpha
-  // formula in the inner loop), so bucketing by age is equivalent.
+  // formula below), so bucketing by age is equivalent — except ages past
+  // the saturation point (palette maxes out at palette.length, alpha
+  // clamps at 1) all render identically and should share one bucket.
   // For fading cells alpha is continuous, so we quantize to 0.05 steps.
   const liveByAge = new Map();
+  const saturatedColorIdx = palette.length - 1;
   for (const [key, age] of state.liveCells.entries()) {
     const [x, y] = xyFromKey(key);
     if (x < bounds.minX || x > bounds.maxX || y < bounds.minY || y > bounds.maxY) continue;
     const point = worldToScreen(x, y);
-    let bucket = liveByAge.get(age);
+    const colorIdx = Math.min(saturatedColorIdx, age - 1);
+    const alpha = Math.min(1, 0.35 + age * 0.08);
+    // Canonical key: collapse all ages ≥ palette.length into a single "max"
+    // bucket because they produce identical pixels.
+    const bucketKey = alpha >= 1 && colorIdx === saturatedColorIdx ? "max" : age;
+    let bucket = liveByAge.get(bucketKey);
     if (!bucket) {
-      const colorIdx = Math.min(palette.length - 1, age - 1);
-      const alpha = Math.min(1, 0.35 + age * 0.08);
       bucket = { color: palette[colorIdx], alpha, points: [] };
-      liveByAge.set(age, bucket);
+      liveByAge.set(bucketKey, bucket);
     }
     bucket.points.push(point);
   }

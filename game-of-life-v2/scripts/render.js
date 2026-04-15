@@ -8,8 +8,13 @@ import { getCurrentPattern, getPatternOffsetCells, getToolCells } from "./tools.
 
 // dpr comes from the caller (app.js / ui.js) — render.js stays out of
 // the window API surface, consistent with the ARCHITECTURE invariant
-// that keeps document/window access in app.js and ui.js only.
-export function ensureCanvasSize(dpr = 1) {
+// that keeps document/window access in app.js and ui.js only. No default:
+// a forgotten argument would produce NaN-sized canvases or silently
+// downsample HiDPI rendering, so require the caller to be explicit.
+export function ensureCanvasSize(dpr) {
+  if (!Number.isFinite(dpr) || dpr <= 0) {
+    throw new Error("ensureCanvasSize: dpr must be a positive finite number (pass window.devicePixelRatio || 1)");
+  }
   const { canvas, ctx, sparklineCanvas, sparkCtx } = canvasRefs;
   const { clientWidth, clientHeight } = canvas;
   // Writing to canvas.width / .height resets the 2D context state (including

@@ -29,6 +29,9 @@ The narrative dev log lives in [docs/journal.md](docs/journal.md). This file rec
 - Batch 3a: cache background `LinearGradient` (was re-allocated every frame); memoize `generateCustomPalette` by accent; cache each particle's `fillStyle` string on theme switch; replace `Math.max(...values)` spread in the sparkline with a manual loop; gate `renderPatternCard` canvas redraw on `(patternIndex, themeId, accent)` change; drop `getComputedStyle` calls from `drawGrid` / `drawGhostPreview` in favor of direct theme reads.
 - Batch 3b: `drawCells` and `drawGhostPreview` now bucket cells by (color, alpha) and emit one compound path + one fill per bucket — replacing ~11 per-cell canvas state ops with one `save`/`restore` amortized across the whole draw. At 1,000 visible cells this drops from ~660k canvas API calls/sec to a few hundred fills/sec.
 
+### Architecture
+- Batch 4: Middle-layer modules no longer touch `document`/`window`. `themes.js` DOM writes moved to `ui.applyThemeToDOM`; `sim.randomFill` takes visibleBounds as a parameter instead of importing from `render.js`; `render.ensureCanvasSize` takes DPR as a parameter. `ARCHITECTURE.md` invariant 3 carves out Web platform APIs (`AudioContext`) with no DOM equivalent as a permitted middle-layer exception.
+
 <!--
 Release entries go above this line. Template:
 

@@ -78,15 +78,15 @@ idle
 
 1. **`state.js` is the only store.** Do not allocate parallel state objects elsewhere. The RAF loop assumes one shared mutable object graph.
 2. **`utils.js` has no imports from other `scripts/` files.** It is the leaf of the dependency graph. Keep it pure.
-3. **DOM access lives in `app.js` and `ui.js`.** Sim / render / history / io modules should not touch `document` or `window`.
+3. **DOM access lives in `app.js` and `ui.js`.** Sim / render / history / io / rules / themes / tools / input modules should not touch `document` or `window`. **Carve-out:** Web platform APIs with no DOM tree equivalent (`AudioContext` / `webkitAudioContext` in `audio.js`) may reach `window` directly. DPR (`window.devicePixelRatio`) is a borderline case and is passed as a parameter into `render.ensureCanvasSize` rather than read from `window` inside the middle layer.
 4. **Simulation is deterministic given `(rule, liveCells)`.** No `Math.random` in the step path. Random fill lives in `sim.randomFill` and is a one-shot user action.
 5. **Sparse map keys are canonical.** Always use `keyFromXY(x, y)` / `xyFromKey(key)`. Do not hand-assemble the `"x,y"` string.
 6. **Wrap mode is an input-time transformation.** `sim.normalizeWrappedCoord` canonicalises coordinates when wrap is on. If wrap is off, no coordinate clamping happens anywhere; the grid is genuinely infinite.
 
 ## Known warts
 
-- **`rules.js` imports `showToast` from `ui.js`** — violates the dependency direction (rule logic pulling UI). Noted in [ADR-0003](docs/adr/0003-module-split-boundaries.md) as a future cleanup. Do not propagate the pattern to other modules.
 - **`state.js` mixes app-wide simulation state with DOM-ref caches (`els`, `canvasRefs`).** Functional, but the shape signals two different concerns. Splitting is a cycle-D candidate.
+- **`audio.js` reads `window.AudioContext` / `window.webkitAudioContext`** directly. Permitted per the carve-out in invariant 3 above — Web Audio has no DOM tree equivalent so injecting a wrapper from `app.js` would be pure ceremony. If the app ever grows a second Web-platform-only API, consider whether to formalise an `adapters/` folder.
 
 ## Cross-cutting concerns
 

@@ -865,7 +865,7 @@ kbd {
   width: min(840px, calc(100vw - 32px));
   max-height: min(84vh, 960px);
   overflow: auto;
-  background: rgba(17, 21, 31, 0.88);
+  background: var(--surface-strong);
   border: 1px solid var(--border-strong);
   border-radius: 20px;
   box-shadow: 0 30px 80px rgba(0,0,0,0.42);
@@ -890,8 +890,8 @@ kbd {
 .shortcut-card {
   padding: 12px;
   border-radius: 12px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.07);
+  background: var(--surface);
+  border: 1px solid var(--border);
   display: grid;
   gap: 10px;
   font-size: 12px;
@@ -905,8 +905,8 @@ kbd {
 .modal .pattern-card {
   padding: 12px;
   border-radius: 12px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.07);
+  background: var(--surface);
+  border: 1px solid var(--border);
   display: grid;
   gap: 10px;
   cursor: pointer;
@@ -915,7 +915,7 @@ kbd {
 
 .modal .pattern-card:hover {
   transform: translateY(-2px);
-  background: rgba(255,255,255,0.08);
+  background: rgba(var(--accent-rgb), 0.08);
   border-color: rgba(var(--accent-rgb), 0.25);
 }
 
@@ -924,7 +924,7 @@ kbd {
   height: 78px;
   border-radius: 10px;
   background: rgba(0,0,0,0.14);
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
 }
 
 /* ============================================================

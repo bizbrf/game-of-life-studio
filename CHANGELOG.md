@@ -18,6 +18,11 @@ The narrative dev log lives in [docs/journal.md](docs/journal.md). This file rec
 - `CLAUDE-HANDOFF.md` archived as `docs/handoffs/2026-04-14-initial-handoff.md`; durable rules folded into `AGENTS.md`.
 - `progress.md` renamed to `docs/journal.md`.
 - `IMPLEMENTATION-SPEC.md` moved to `docs/specs/2026-04-14-v2-implementation-spec.md`.
+- **Architecture**: no middle-layer module imports from `ui.js`. `applyRule`, `undo`, `redo`, `randomFill` return `{ success, message }` result objects; `app.js` surfaces toasts and calls `updateUI`. Keyboard dispatch (`handleKeydown`) moved from `input.js` to `app.js`. `ADR-0003` retires the "one known exception" language.
+
+### Fixed
+- Batch 2 review (bugs): pinch-zoom TypeError on geometry tools, sparkline fill-polygon geometry, sparkline canvas zero-size transform reset, freehand stroke produces one undo entry instead of one-per-cell.
+- Batch 1 review (architecture): `state.js ↔ rules.js` circular import, four undocumented `ui.js` imports from `history`/`sim`/`tools`/`input`, and inaccurate `module-map.md` entries now reflect reality.
 
 ### Removed
 - Ad-hoc iteration screenshots from `output/`; three canonical ones promoted to `docs/screenshots/`.

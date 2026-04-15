@@ -2,8 +2,7 @@
 
 import { PATTERNS } from "./patterns.js";
 import { state } from "./state.js";
-import { mod } from "./utils.js";
-import { updateUI } from "./ui.js";
+import { keyFromXY, mod } from "./utils.js";
 
 export function getCurrentPattern() {
   return PATTERNS[state.patternIndex];
@@ -29,7 +28,7 @@ export function getPatternOffsetCells(worldX, worldY) {
 export function dedupeCells(cells) {
   const set = new Set();
   return cells.filter(([x, y]) => {
-    const key = `${x},${y}`;
+    const key = keyFromXY(x, y);
     if (set.has(key)) return false;
     set.add(key);
     return true;
@@ -98,11 +97,12 @@ export function getToolCells(anchor, current) {
   }
 }
 
+// Both setTool and selectPattern mutate state only; callers (ui.js, app.js)
+// call updateUI() to sync DOM. Keeps tools.js from importing upward.
 export function setTool(toolId) {
   state.currentTool = toolId;
   if (toolId === "stamp" && !getCurrentPattern().cells) state.patternIndex = 1;
   if (toolId === "freehand") state.patternIndex = 0;
-  updateUI();
 }
 
 export function selectPattern(index, forceStamp = false) {
@@ -113,5 +113,4 @@ export function selectPattern(index, forceStamp = false) {
   } else {
     state.currentTool = "freehand";
   }
-  updateUI();
 }

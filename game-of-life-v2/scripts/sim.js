@@ -12,7 +12,6 @@ import {
 } from "./history.js";
 import { emitStepSound } from "./audio.js";
 import { visibleWorldBounds } from "./render.js";
-import { showToast } from "./ui.js";
 
 export function normalizeWrappedCoord(x, y) {
   const minX = -Math.floor(WRAP_BOUNDS.width / 2);
@@ -55,6 +54,11 @@ export function updateFadeAnimations(dt) {
 }
 
 export function stepSimulation() {
+  // Defensive: state.rules is null between module load and app.js:initialize()
+  // (the cycle with rules.js was broken by leaving state.rules unset until
+  // applyRule runs). Normal play can't reach this branch, but a test harness
+  // that races window.advanceTime against DOMContentLoaded could.
+  if (!state.rules) return;
   if (state.browsingHistory && state.historyCursor !== state.simulationHistory.length - 1) {
     truncateHistoryToCursor();
   }
@@ -123,7 +127,7 @@ export function randomFill() {
   state.populationHistory = [state.liveCells.size];
   state.simulationHistory = [];
   pushSimulationSnapshot();
-  showToast("Filled the active field at 25% density.");
+  return { message: "Filled the active field at 25% density." };
 }
 
 export function addCells(cells, alive, label = "Edit", pushUndo = true, strokeBefore = null) {

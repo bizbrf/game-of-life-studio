@@ -3,7 +3,6 @@
 import { MAX_UNDO, MAX_REWIND, MAX_SPARKLINE_POINTS } from "./constants.js";
 import { state } from "./state.js";
 import { cloneMapEntries } from "./utils.js";
-import { showToast } from "./ui.js";
 
 export function setCellAge(key, age) {
   if (age > 0) state.liveCells.set(key, age);
@@ -81,16 +80,21 @@ function applyUndoEntry(entry, direction) {
   pushSimulationSnapshot();
 }
 
+// Returns { success: true } on success, { success: false, message } when the
+// stack is empty. Callers (app.js) surface the message via showToast; keeps
+// history.js from depending upward on ui.js.
 export function undo() {
   const entry = state.undoStack.pop();
-  if (!entry) return showToast("Nothing to undo.");
+  if (!entry) return { success: false, message: "Nothing to undo." };
   applyUndoEntry(entry, "undo");
   state.redoStack.push(entry);
+  return { success: true };
 }
 
 export function redo() {
   const entry = state.redoStack.pop();
-  if (!entry) return showToast("Nothing to redo.");
+  if (!entry) return { success: false, message: "Nothing to redo." };
   applyUndoEntry(entry, "redo");
   state.undoStack.push(entry);
+  return { success: true };
 }

@@ -2,7 +2,7 @@
 
 import { state } from "./state.js";
 import { keyFromXY, xyFromKey, cloneMapEntries } from "./utils.js";
-import { applyRule, canonicalizeRule } from "./rules.js";
+import { applyRule, canonicalizeRule, compileRule } from "./rules.js";
 import { setTheme, getTheme } from "./themes.js";
 import { commitDiffFromMaps, pushSimulationSnapshot } from "./history.js";
 import { normalizeKeyForState } from "./sim.js";
@@ -76,6 +76,11 @@ export function parseRLE(text) {
 export function importJson(text) {
   const data = JSON.parse(text);
   if (!Array.isArray(data.cells)) throw new Error("JSON must contain a cells array.");
+  // Validate the rule before touching state so a bad import leaves the
+  // existing world intact. compileRule is pure (no state mutation).
+  if (data.rule && !compileRule(data.rule)) {
+    throw new Error("Invalid rule. Use B/S notation like B3/S23.");
+  }
   const before = new Map(state.liveCells);
   state.liveCells = new Map(data.cells);
   if (data.rule) applyRule(data.rule);
@@ -89,6 +94,12 @@ export function importJson(text) {
 
 export function importRle(text) {
   const parsed = parseRLE(text);
+  // parsed.rule is the output of canonicalizeRule, which returns null on
+  // invalid input. An empty string in the header also canonicalizes to null.
+  // Validate here before mutating state so a bad header leaves the world intact.
+  if (parsed.rule && !compileRule(parsed.rule)) {
+    throw new Error("Invalid rule. Use B/S notation like B3/S23.");
+  }
   const before = new Map(state.liveCells);
   state.liveCells.clear();
   const anchor = { x: Math.round(state.camera.x), y: Math.round(state.camera.y) };

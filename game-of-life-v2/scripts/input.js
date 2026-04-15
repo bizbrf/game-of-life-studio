@@ -1,29 +1,16 @@
-// Pointer/touch/keyboard interaction, zoom, autoFit.
+// Pointer / touch interaction and camera zoom + autoFit.
+// Keyboard handling lives in app.js (handleKeydown) so this module stays
+// out of the ui.js / audio.js upward-import territory.
 
 import { BASE_CELL_SIZE, MIN_ZOOM, MAX_ZOOM } from "./constants.js";
 import { state, els, canvasRefs } from "./state.js";
 import { clamp, xyFromKey } from "./utils.js";
-import { getCurrentPattern, getPatternOffsetCells, getToolCells, setTool } from "./tools.js";
-import { addCells, commitStroke, stepSimulation, resetSimulation, randomFill } from "./sim.js";
+import { getCurrentPattern, getPatternOffsetCells, getToolCells } from "./tools.js";
+import { addCells, commitStroke } from "./sim.js";
 import { screenToWorld } from "./render.js";
-import { undo, redo } from "./history.js";
-import {
-  updateUI,
-  openModal,
-  closeModal,
-  closeTopModal,
-  isModalOpen,
-  adjustSpeed,
-  cycleTheme,
-  toggleInspector,
-  closeInspector,
-  closeSpeedPopover,
-  closeRulePopover,
-} from "./ui.js";
-import { syncAudioState } from "./audio.js";
 
 export function beginInteraction(kind, clientX, clientY, button = 0) {
-  if (isModalOpen()) return;
+  if (state.modals.size > 0) return;
   const { canvas } = canvasRefs;
   const world = screenToWorld(clientX, clientY);
   state.hoverCell = world;
@@ -116,13 +103,14 @@ export function zoomAt(clientX, clientY, direction) {
   state.camera.y = before.y - (localY - canvas.clientHeight / 2) / size;
 }
 
+// Callers (app.js) call updateUI() after autoFit; this module no longer
+// reaches upward into ui.js.
 export function autoFit() {
   const { canvas } = canvasRefs;
   if (!state.liveCells.size) {
     state.camera.x = 0;
     state.camera.y = 0;
     state.camera.zoom = 1;
-    updateUI();
     return;
   }
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
@@ -142,92 +130,4 @@ export function autoFit() {
     MIN_ZOOM,
     MAX_ZOOM,
   );
-  updateUI();
-}
-
-export function handleKeydown(event) {
-  if (event.target && ["INPUT", "TEXTAREA", "SELECT"].includes(event.target.tagName)) {
-    if (event.key === "Escape") event.target.blur();
-    return;
-  }
-  // When a modal is open, let the modal's own Tab-trap handler drive focus.
-  // Without this guard, the document-level Tab case below would also fire
-  // selectPattern + preventDefault on every Tab, breaking the trap and
-  // quietly mutating state.patternIndex.
-  if (event.key === "Tab" && isModalOpen()) return;
-  if (event.key === "Escape") {
-    event.preventDefault();
-    // Close the topmost overlay first: modal > inspector > popover. Modals
-    // and inspector sit ABOVE popovers in the visual / semantic stack, so
-    // Escape must peel them off before touching a background popover. The
-    // popover's own keydown handler (installed on openModal's trapped
-    // modal element) takes care of Escape while focus is INSIDE the
-    // popover; this branch catches the case where focus has left it.
-    if (closeTopModal()) return;
-    if (state.inspectorOpen) { closeInspector(); return; }
-    if (els.rulePopover && els.rulePopover.classList.contains("visible")) {
-      closeRulePopover();
-      return;
-    }
-    if (els.speedPopover && els.speedPopover.classList.contains("visible")) {
-      closeSpeedPopover({ restoreFocus: false });
-      return;
-    }
-  }
-  // While a modal is open, the document-level global shortcuts
-  // (Space/play-pause, R/reset, F/fill, G/grid, W/wrap, T/theme, 1-6 tools,
-  // Tab/pattern-cycle, etc.) must not fire — they would mutate sim state
-  // from behind the dialog and hijack Space / Enter activations on the
-  // modal's focused button. Tab is already guarded above; short-circuit
-  // everything else here too.
-  if (isModalOpen()) return;
-  if ((event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === "k") {
-    event.preventDefault();
-    toggleInspector();
-    return;
-  }
-  if ((event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === "z") {
-    event.preventDefault();
-    undo();
-    updateUI();
-    return;
-  }
-  if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === "z") {
-    event.preventDefault();
-    redo();
-    updateUI();
-    return;
-  }
-  switch (event.key) {
-    case " ": event.preventDefault(); state.simulating = !state.simulating; syncAudioState(); break;
-    case "n": case "N": if (!state.simulating) stepSimulation(); break;
-    case "r": case "R": resetSimulation(); break;
-    case "f": case "F": randomFill(); break;
-    case "g": case "G": state.gridLines = !state.gridLines; break;
-    case "w": case "W": state.wrap = !state.wrap; break;
-    case "t": case "T": cycleTheme(); break;
-    case "h": case "H":
-      state.modals.has("help-modal") ? closeModal("help-modal") : openModal("help-modal");
-      break;
-    case "?": event.preventDefault(); openModal("help-modal"); break;
-    case "Tab":
-      event.preventDefault();
-      // Lazy import avoids a load-order cycle with tools.js
-      import("./tools.js").then(({ selectPattern }) => {
-        selectPattern(state.patternIndex + (event.shiftKey ? -1 : 1), true);
-      });
-      break;
-    case "+": case "=": adjustSpeed(2); break;
-    case "-": case "_": adjustSpeed(-2); break;
-    case "[": adjustSpeed(-1); break;
-    case "]": adjustSpeed(1); break;
-    case "1": setTool("freehand"); break;
-    case "2": setTool("eraser"); break;
-    case "3": setTool("stamp"); break;
-    case "4": setTool("line"); break;
-    case "5": setTool("box"); break;
-    case "6": setTool("circle"); break;
-    default: break;
-  }
-  updateUI();
 }

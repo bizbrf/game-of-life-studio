@@ -40,6 +40,7 @@ import {
   closeInspector,
   toggleInspector,
   cycleTheme,
+  applyThemeToDOM,
   showSparklinePopover,
   hideSparklinePopover,
 } from "./ui.js";
@@ -119,7 +120,7 @@ function handleKeydown(event) {
     case " ": event.preventDefault(); state.simulating = !state.simulating; syncAudioState(); break;
     case "n": case "N": if (!state.simulating) stepSimulation(); break;
     case "r": case "R": resetSimulation(); break;
-    case "f": case "F": showToast(randomFill().message); break;
+    case "f": case "F": showToast(randomFill(visibleWorldBounds(0)).message); break;
     case "g": case "G": state.gridLines = !state.gridLines; break;
     case "w": case "W": state.wrap = !state.wrap; break;
     case "t": case "T": cycleTheme(); break;
@@ -199,7 +200,7 @@ function advanceSimulationBy(ms) {
 function bindEvents() {
   const { canvas } = canvasRefs;
 
-  window.addEventListener("resize", () => { ensureCanvasSize(); draw(); updateUI(); });
+  window.addEventListener("resize", () => { ensureCanvasSize(window.devicePixelRatio || 1); draw(); updateUI(); });
   document.addEventListener("keydown", handleKeydown);
 
   // ----- Canvas input -----
@@ -379,7 +380,7 @@ function bindEvents() {
   // ----- Inspector: Scene row -----
   els.fitBtn.addEventListener("click", () => { autoFit(); updateUI(); });
   els.randomBtn.addEventListener("click", () => {
-    const result = randomFill();
+    const result = randomFill(visibleWorldBounds(0));
     showToast(result.message);
     updateUI();
   });
@@ -451,7 +452,14 @@ function bindEvents() {
     catch (error) { showToast(error.message || "RLE import failed."); }
   });
   els.importJsonBtn.addEventListener("click", () => {
-    try { importJson(els.importText.value); showToast("JSON imported."); updateUI(); }
+    try {
+      importJson(els.importText.value);
+      // importJson can call setTheme (state only); project the theme to DOM
+      // so the 15 CSS custom properties pick up the imported theme.
+      applyThemeToDOM();
+      showToast("JSON imported.");
+      updateUI();
+    }
     catch (error) { showToast(error.message || "JSON import failed."); }
   });
   els.uploadBtn.addEventListener("click", () => els.fileInput.click());
@@ -545,10 +553,11 @@ function updateLoop(now) {
 function initialize() {
   hydrateDomReferences();
   setupUI();
-  ensureCanvasSize();
+  ensureCanvasSize(window.devicePixelRatio || 1);
   applyRule(state.rule);
   setTheme("obsidian", true);
   state.paletteId = getTheme().defaultPalette;
+  applyThemeToDOM();
   // Respect prefers-reduced-motion: disable floating background particles.
   // CSS handles transitions / keyframes; this handles the JS-driven particle
   // animation loop.

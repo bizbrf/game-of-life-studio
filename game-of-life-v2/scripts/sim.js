@@ -11,7 +11,6 @@ import {
   pushUndoEntry,
 } from "./history.js";
 import { emitStepSound } from "./audio.js";
-import { visibleWorldBounds } from "./render.js";
 
 export function normalizeWrappedCoord(x, y) {
   const minX = -Math.floor(WRAP_BOUNDS.width / 2);
@@ -104,7 +103,15 @@ export function resetSimulation(pushUndo = true) {
   pushSimulationSnapshot();
 }
 
-export function randomFill() {
+// `visibleBounds` is what the user can see when wrap is off — passed in
+// by the caller so sim.js doesn't need to import render (viewport is a
+// UI concept, not a simulation one). Required when wrap is off; guarded
+// so a forgetful caller fails loudly rather than silently dereferencing
+// undefined.
+export function randomFill(visibleBounds) {
+  if (!state.wrap && !visibleBounds) {
+    throw new Error("randomFill: visibleBounds is required when state.wrap is false");
+  }
   const bounds = state.wrap
     ? {
         minX: -Math.floor(WRAP_BOUNDS.width / 2),
@@ -112,7 +119,7 @@ export function randomFill() {
         minY: -Math.floor(WRAP_BOUNDS.height / 2),
         maxY: Math.ceil(WRAP_BOUNDS.height / 2) - 1,
       }
-    : visibleWorldBounds(0);
+    : visibleBounds;
   const before = new Map(state.liveCells);
   state.liveCells.clear();
   for (let y = bounds.minY; y <= bounds.maxY; y += 1) {

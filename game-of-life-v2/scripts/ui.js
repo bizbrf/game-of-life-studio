@@ -15,6 +15,34 @@ import { getCurrentPattern, setTool } from "./tools.js";
 import { syncAudioState } from "./audio.js";
 import { drawSparkline, drawPatternPreview, ensureCanvasSize } from "./render.js";
 
+// themes.setTheme is state-only. applyThemeToDOM writes the CSS custom
+// properties, colorScheme, and accentPicker sync. Every caller of
+// setTheme must pair it with this call; `themes.js` cannot reach the DOM
+// per the middle-layer invariant.
+export function applyThemeToDOM() {
+  const theme = getTheme();
+  const root = document.documentElement.style;
+  root.setProperty("--bg", theme.colors.bg);
+  root.setProperty("--bg-2", theme.colors.bg2);
+  root.setProperty("--surface", theme.colors.surface);
+  root.setProperty("--surface-strong", theme.colors.surfaceStrong);
+  root.setProperty("--border", theme.colors.border);
+  root.setProperty("--border-strong", theme.colors.borderStrong);
+  root.setProperty("--text", theme.colors.text);
+  root.setProperty("--text-dim", theme.colors.textDim);
+  root.setProperty("--accent", theme.colors.accent);
+  root.setProperty("--accent-rgb", theme.colors.accentRgb);
+  root.setProperty("--ambient-a", theme.colors.ambientA);
+  root.setProperty("--ambient-b", theme.colors.ambientB);
+  root.setProperty("--grid-line", theme.colors.gridLine);
+  root.setProperty("--success", theme.colors.success);
+  root.setProperty("--danger", theme.colors.danger);
+  document.documentElement.style.colorScheme = theme.mode;
+  if (state.paletteId !== "custom" && els.accentPicker) {
+    els.accentPicker.value = theme.colors.accent;
+  }
+}
+
 // ---------- Toast + clipboard ----------
 
 export function showToast(message) {
@@ -232,7 +260,7 @@ export function showSparklinePopover() {
   // The sparkline canvas backing store may have been skipped while the
   // popover was hidden (see ensureCanvasSize). Resize now that layout has
   // given it real dimensions, then draw.
-  ensureCanvasSize();
+  ensureCanvasSize(window.devicePixelRatio || 1);
   drawSparkline();
 }
 
@@ -351,6 +379,7 @@ export function setupUI() {
     swatch.style.background = `linear-gradient(135deg, ${theme.colors.bg} 0%, ${theme.colors.bg2} 60%, ${theme.colors.accent} 100%)`;
     swatch.addEventListener("click", () => {
       setTheme(theme.id);
+      applyThemeToDOM();
       updateUI();
       renderPatternBrowser();
     });
@@ -478,6 +507,7 @@ export { hexToRgb };
 
 export function cycleTheme() {
   setTheme(THEMES[(state.themeIndex + 1) % THEMES.length].id);
+  applyThemeToDOM();
   showToast(`${getTheme().name} theme`);
   updateUI();
 }

@@ -1,7 +1,7 @@
 // Theme and palette handling.
 
 import { THEMES, PALETTES } from "./constants.js";
-import { state, els } from "./state.js";
+import { state } from "./state.js";
 import { hexToRgb, rgbToHex, mixColor } from "./utils.js";
 
 export function getTheme() {
@@ -41,33 +41,19 @@ export function getPaletteColors() {
   return cachedCustomPalette;
 }
 
+// themes.setTheme is state-only: updates state.themeIndex / paletteId /
+// accent. The 15 CSS custom-property writes + colorScheme + accentPicker
+// sync live in ui.applyThemeToDOM(); every caller of setTheme must pair
+// it with that call. This keeps themes.js out of document/window.
 export function setTheme(themeId, silent = false) {
   const index = THEMES.findIndex((theme) => theme.id === themeId);
   if (index === -1) return;
   state.themeIndex = index;
   const theme = THEMES[index];
-  const root = document.documentElement.style;
-  root.setProperty("--bg", theme.colors.bg);
-  root.setProperty("--bg-2", theme.colors.bg2);
-  root.setProperty("--surface", theme.colors.surface);
-  root.setProperty("--surface-strong", theme.colors.surfaceStrong);
-  root.setProperty("--border", theme.colors.border);
-  root.setProperty("--border-strong", theme.colors.borderStrong);
-  root.setProperty("--text", theme.colors.text);
-  root.setProperty("--text-dim", theme.colors.textDim);
-  root.setProperty("--accent", theme.colors.accent);
-  root.setProperty("--accent-rgb", theme.colors.accentRgb);
-  root.setProperty("--ambient-a", theme.colors.ambientA);
-  root.setProperty("--ambient-b", theme.colors.ambientB);
-  root.setProperty("--grid-line", theme.colors.gridLine);
-  root.setProperty("--success", theme.colors.success);
-  root.setProperty("--danger", theme.colors.danger);
-  document.documentElement.style.colorScheme = theme.mode;
   if (!silent) {
     state.paletteId = theme.defaultPalette;
   }
   if (state.paletteId !== "custom") {
     state.accent = theme.colors.accent;
-    if (els.accentPicker) els.accentPicker.value = theme.colors.accent;
   }
 }

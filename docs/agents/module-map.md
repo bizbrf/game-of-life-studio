@@ -6,7 +6,9 @@ For narrative context see [../../ARCHITECTURE.md](../../ARCHITECTURE.md).
 
 ## Module summary
 
-Post-review-batch state (all upward imports from the middle layer to `ui.js` removed; see [docs/review/REVIEW.md](../review/REVIEW.md)).
+**This map describes the state after all 6 review-cycle PRs merge to `main` in recommended order (#12 Batch 1 → #13 Batch 5 → #14 Batch 3a → #15 Batch 3b → #16 Batch 4 → #17 Batch 6).** Batch 6 itself is stacked behind Batch 4 but was committed on top of a branch that has not yet seen Batch 1's handleKeydown move or Batch 1's import-table corrections. If Batch 6 lands before Batch 1, re-sync this file against the actual `input.js` / `rules.js` / `sim.js` / `tools.js` / `history.js` import blocks — the recommended merge order avoids that.
+
+All upward imports from the middle layer to `ui.js` are documented-gone; see [docs/review/REVIEW.md](../review/REVIEW.md) for the batch breakdown.
 
 | # | File | Responsibility | Imports from scripts/ |
 |---|---|---|---|

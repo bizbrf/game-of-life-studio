@@ -239,14 +239,16 @@ function drawCells() {
     if (alphaExact <= 0) continue;
     const point = worldToScreen(x, y);
     const colorIdx = Math.min(palette.length - 1, Math.max(0, fading.age - 1));
-    // 0.05 quantization → at most 20 alpha tiers per color, so worst-case
-    // 20 × palette.length buckets. In practice fades clear in < 0.5s so
-    // bucket count is much smaller than live-cell count.
-    const alphaKey = Math.round(alphaExact * 20) / 20;
-    const bucketKey = `${colorIdx}|${alphaKey}`;
+    // 0.05 quantization → at most 21 alpha tiers (0..20 inclusive) per color,
+    // so worst-case 21 × palette.length buckets. In practice fades clear in
+    // < 0.5s so bucket count is much smaller. Numeric integer key avoids
+    // per-cell template-literal string allocation in the hot path; 32 is a
+    // safe stride since alphaTier ∈ [0, 20].
+    const alphaTier = Math.round(alphaExact * 20);
+    const bucketKey = colorIdx * 32 + alphaTier;
     let bucket = fadeBuckets.get(bucketKey);
     if (!bucket) {
-      bucket = { color: palette[colorIdx], alpha: alphaKey, points: [] };
+      bucket = { color: palette[colorIdx], alpha: alphaTier / 20, points: [] };
       fadeBuckets.set(bucketKey, bucket);
     }
     bucket.points.push(point);

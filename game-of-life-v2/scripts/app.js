@@ -211,7 +211,13 @@ function bindEvents() {
   els.inspectorBackdrop.addEventListener("click", () => closeInspector());
 
   // ----- Status strip: rule popover + sparkline hover -----
+  function closeRulePopover() {
+    els.rulePopover.classList.remove("visible");
+    els.statusRule.setAttribute("aria-expanded", "false");
+  }
   els.statusRule.addEventListener("click", () => {
+    const alreadyOpen = els.rulePopover.classList.contains("visible");
+    if (alreadyOpen) { closeRulePopover(); return; }
     const rect = els.statusRule.getBoundingClientRect();
     els.rulePopover.innerHTML = "";
     RULESETS.forEach((ruleset) => {
@@ -221,40 +227,53 @@ function bindEvents() {
       opt.innerHTML = `<span>${ruleset.label}</span><span class="meta">${ruleset.rule}</span>`;
       opt.addEventListener("click", () => {
         applyRule(ruleset.rule, true);
-        els.rulePopover.classList.remove("visible");
+        closeRulePopover();
+        els.statusRule.focus();
         updateUI();
       });
       els.rulePopover.appendChild(opt);
     });
     const customRow = document.createElement("div");
     customRow.className = "custom-row";
-    customRow.innerHTML = `<input type="text" value="${state.rule}" spellcheck="false" placeholder="B/S notation">`;
+    customRow.innerHTML = `<input type="text" value="${state.rule}" spellcheck="false" placeholder="B/S notation" aria-label="Custom B/S rule">`;
     const input = customRow.querySelector("input");
     input.addEventListener("change", () => {
       applyRule(input.value, true);
-      els.rulePopover.classList.remove("visible");
+      closeRulePopover();
+      els.statusRule.focus();
       updateUI();
     });
     els.rulePopover.appendChild(customRow);
     els.rulePopover.style.left = `${rect.left}px`;
     els.rulePopover.style.top = `${rect.bottom + 8}px`;
     els.rulePopover.classList.add("visible");
+    els.statusRule.setAttribute("aria-expanded", "true");
+    // Move focus to the first option so keyboard users land inside the menu.
+    const firstOption = els.rulePopover.querySelector("button.option");
+    if (firstOption) firstOption.focus();
   });
-  els.statusRule.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" || event.key === " ") {
+  // Escape inside the rule popover closes it and returns focus to the trigger.
+  els.rulePopover.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && els.rulePopover.classList.contains("visible")) {
       event.preventDefault();
-      els.statusRule.click();
+      closeRulePopover();
+      els.statusRule.focus();
     }
   });
 
   let popHoverTimer = null;
-  els.statusPopToken.addEventListener("mouseenter", () => {
+  function schedulePopShow() {
     popHoverTimer = setTimeout(() => showSparklinePopover(), 120);
-  });
-  els.statusPopToken.addEventListener("mouseleave", () => {
+  }
+  function schedulePopHide() {
     if (popHoverTimer) clearTimeout(popHoverTimer);
     setTimeout(() => hideSparklinePopover(), 80);
-  });
+  }
+  els.statusPopToken.addEventListener("mouseenter", schedulePopShow);
+  els.statusPopToken.addEventListener("mouseleave", schedulePopHide);
+  // Keyboard equivalents: focusing the pop token shows the popover.
+  els.statusPopToken.addEventListener("focusin", schedulePopShow);
+  els.statusPopToken.addEventListener("focusout", schedulePopHide);
 
   // ----- Inspector: Scene row -----
   els.fitBtn.addEventListener("click", () => autoFit());
@@ -358,7 +377,7 @@ function bindEvents() {
     if (els.rulePopover.classList.contains("visible")
         && !els.rulePopover.contains(event.target)
         && event.target !== els.statusRule) {
-      els.rulePopover.classList.remove("visible");
+      closeRulePopover();
     }
   });
 }

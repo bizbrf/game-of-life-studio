@@ -317,8 +317,16 @@ function bindEvents() {
   });
 
   // ----- Inspector: Undo / Redo -----
-  els.undoBtn.addEventListener("click", () => { undo(); updateUI(); });
-  els.redoBtn.addEventListener("click", () => { redo(); updateUI(); });
+  els.undoBtn.addEventListener("click", () => {
+    const result = undo();
+    if (!result.success) showToast(result.message);
+    updateUI();
+  });
+  els.redoBtn.addEventListener("click", () => {
+    const result = redo();
+    if (!result.success) showToast(result.message);
+    updateUI();
+  });
 
   // ----- Inspector: History rewind -----
   els.historySlider.addEventListener("input", () => {

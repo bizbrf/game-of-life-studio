@@ -19,6 +19,7 @@ import {
   closeInspector,
   closeSpeedPopover,
   closeRulePopover,
+  showToast,
 } from "./ui.js";
 import { syncAudioState } from "./audio.js";
 
@@ -188,13 +189,15 @@ export function handleKeydown(event) {
   }
   if ((event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === "z") {
     event.preventDefault();
-    undo();
+    const result = undo();
+    if (!result.success) showToast(result.message);
     updateUI();
     return;
   }
   if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === "z") {
     event.preventDefault();
-    redo();
+    const result = redo();
+    if (!result.success) showToast(result.message);
     updateUI();
     return;
   }

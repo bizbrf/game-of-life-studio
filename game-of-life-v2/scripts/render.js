@@ -96,6 +96,15 @@ let cachedBgGradientKey = "";
 function drawBackgroundAtmosphere() {
   const { canvas, ctx } = canvasRefs;
   const theme = getTheme();
+  // Guard against a zero-extent canvas (e.g. display:none briefly during
+  // initial layout). createLinearGradient(0,0,0,0) is degenerate and fills
+  // with the first colorstop's color only; caching it would poison the cache
+  // until the next theme switch or resize.
+  if (canvas.clientWidth === 0 || canvas.clientHeight === 0) {
+    ctx.fillStyle = theme.colors.bg;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    return;
+  }
   const key = `${theme.id}|${canvas.clientWidth}|${canvas.clientHeight}`;
   if (key !== cachedBgGradientKey || !cachedBgGradient) {
     cachedBgGradient = ctx.createLinearGradient(0, 0, canvas.clientWidth, canvas.clientHeight);
@@ -111,6 +120,11 @@ function drawBackgroundAtmosphere() {
 // particle — their alphas are fixed at build time) and rebuilt when the
 // theme changes. Without the cache each of 28 particles allocated a fresh
 // `rgba(r,g,b,a)` template literal every frame.
+// Intentional: the cache key is theme id only, NOT state.accent. Particles
+// tint from the theme's built-in accentRgb, not from the user's custom
+// accent picker value — a pre-existing behavior preserved here. If a future
+// PR wants particles to follow the picker, widen this key to include the
+// picker's rgb triple.
 let particlesCacheThemeId = null;
 
 function ensureParticleStyles(themeId) {

@@ -11,7 +11,7 @@ import { state, els } from "./state.js";
 import { capitalize, clamp, hexToRgb } from "./utils.js";
 import { getTheme, setTheme } from "./themes.js";
 import { getRuleLabel } from "./rules.js";
-import { getCurrentPattern, setTool } from "./tools.js";
+import { getCurrentPattern, selectPattern, setTool } from "./tools.js";
 import { syncAudioState } from "./audio.js";
 import { drawSparkline, drawPatternPreview, ensureCanvasSize } from "./render.js";
 
@@ -233,8 +233,8 @@ export function toggleInspector() {
 // calls/second for a preview that looks identical frame to frame.
 // Key = (patternIndex, themeId). The accent passed to drawPatternPreview
 // is always getTheme().colors.accent (matching renderPatternBrowser) so
-// the card and the modal's browser grid stay consistent under a custom
-// accent picker — preserving pre-PR behavior.
+// the card and the modal's browser grid stay visually consistent under
+// a custom accent picker.
 let lastRenderedPatternIdx = -1;
 let lastRenderedThemeId = null;
 
@@ -294,8 +294,7 @@ export function renderPatternBrowser() {
     description.className = "subtitle";
     description.textContent = pattern.description;
     card.append(name, preview, description);
-    card.addEventListener("click", async () => {
-      const { selectPattern } = await import("./tools.js");
+    card.addEventListener("click", () => {
       selectPattern(realIndex, true);
       closeModal("pattern-modal");
       showToast(`${pattern.name} selected.`);
@@ -500,7 +499,6 @@ export function updatePerformanceCounters(dt) {
   }
 }
 
-// Re-exports for convenience
 export { hexToRgb };
 
 // ---------- Theme cycle (keyboard T) ----------

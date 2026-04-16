@@ -146,9 +146,8 @@ function drawBackgroundAtmosphere() {
 // `rgba(r,g,b,a)` template literal every frame.
 // Intentional: the cache key is theme id only, NOT state.accent. Particles
 // tint from the theme's built-in accentRgb, not from the user's custom
-// accent picker value — a pre-existing behavior preserved here. If a future
-// PR wants particles to follow the picker, widen this key to include the
-// picker's rgb triple.
+// accent picker value. To make particles follow the picker, widen this
+// key to include the picker's rgb triple.
 let particlesCacheThemeId = null;
 
 function ensureParticleStyles(themeId) {

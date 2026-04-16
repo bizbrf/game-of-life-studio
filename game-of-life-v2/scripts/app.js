@@ -1,13 +1,13 @@
 // App entry point: wires DOM references, binds events, runs the RAF loop.
 
-import { MIN_ZOOM, MAX_ZOOM, RULESETS } from "./constants.js";
+import { BASE_CELL_SIZE, MIN_ZOOM, MAX_ZOOM, RULESETS } from "./constants.js";
 import { state, els, canvasRefs } from "./state.js";
 import { clamp, xyFromKey } from "./utils.js";
 import { applyRule } from "./rules.js";
 import { setTheme, getTheme } from "./themes.js";
 import { restoreSnapshot, pushSimulationSnapshot, undo, redo } from "./history.js";
 import { stepSimulation, resetSimulation, randomFill, updateSimulation, commitStroke } from "./sim.js";
-import { getCurrentPattern, setTool } from "./tools.js";
+import { getCurrentPattern, selectPattern, setTool } from "./tools.js";
 import { syncAudioState } from "./audio.js";
 import {
   ensureCanvasSize,
@@ -130,11 +130,8 @@ function handleKeydown(event) {
     case "?": event.preventDefault(); openModal("help-modal"); break;
     case "Tab":
       event.preventDefault();
-      // Lazy import avoids a load-order cycle with tools.js
-      import("./tools.js").then(({ selectPattern }) => {
-        selectPattern(state.patternIndex + (event.shiftKey ? -1 : 1), true);
-        updateUI();
-      });
+      selectPattern(state.patternIndex + (event.shiftKey ? -1 : 1), true);
+      updateUI();
       break;
     case "+": case "=": adjustSpeed(2); break;
     case "-": case "_": adjustSpeed(-2); break;
@@ -271,7 +268,7 @@ function bindEvents() {
       const distance = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
       const scale = distance / state.interaction.startDistance;
       state.camera.zoom = clamp(state.interaction.startZoom * scale, MIN_ZOOM, MAX_ZOOM);
-      const size = 12 * state.camera.zoom;
+      const size = BASE_CELL_SIZE * state.camera.zoom;
       state.camera.x = state.interaction.startCameraX - (centerX - state.interaction.startCenterX) / size;
       state.camera.y = state.interaction.startCameraY - (centerY - state.interaction.startCenterY) / size;
     }
@@ -314,8 +311,9 @@ function bindEvents() {
   els.inspectorBackdrop.addEventListener("click", () => closeInspector());
 
   // ----- Status strip: rule popover + sparkline hover -----
-  // closeRulePopover is defined in ui.js so handleKeydown (which lives in
-  // input.js) can close the popover on Escape without a separate import here.
+  // closeRulePopover is exported from ui.js so handleKeydown (above) can
+  // dismiss the popover on Escape without ui.js reaching down into DOM
+  // wiring that lives in this file.
   els.statusRule.addEventListener("click", () => {
     const alreadyOpen = els.rulePopover.classList.contains("visible");
     if (alreadyOpen) { closeRulePopover(); return; }
@@ -466,9 +464,12 @@ function bindEvents() {
   els.fileInput.addEventListener("change", async () => {
     const file = els.fileInput.files[0];
     if (!file) return;
-    const text = await file.text();
-    els.importText.value = text;
-    showToast(`Loaded ${file.name}`);
+    try {
+      els.importText.value = await file.text();
+      showToast(`Loaded ${file.name}`);
+    } catch (error) {
+      showToast(`Could not read ${file.name}: ${error.message || "read failed"}`);
+    }
   });
   els.exportRleBtn.addEventListener("click", () => { els.exportText.value = exportToRle(); });
   els.exportJsonBtn.addEventListener("click", () => { els.exportText.value = exportToJson(); });
@@ -570,7 +571,7 @@ function initialize() {
   requestAnimationFrame(updateLoop);
 }
 
-// Public test hooks (preserved from the single-file build).
+// Public test hooks.
 window.render_game_to_text = renderGameToText;
 window.advanceTime = (ms) => { advanceSimulationBy(ms); };
 window.__gameOfLifeV2 = { state, exportToJson, exportToRle };

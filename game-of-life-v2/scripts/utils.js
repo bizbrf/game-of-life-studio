@@ -10,7 +10,7 @@ export function xyFromKey(key) {
 }
 
 export function cloneMapEntries(map) {
-  return Array.from(map.entries(), ([key, value]) => [key, value]);
+  return [...map.entries()];
 }
 
 export function mod(value, divisor) {

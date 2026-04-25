@@ -3,7 +3,7 @@
 import { BASE_CELL_SIZE, MIN_ZOOM, MAX_ZOOM, RULESETS } from "./constants.js";
 import { state, els, canvasRefs } from "./state.js";
 import { clamp, xyFromKey } from "./utils.js";
-import { applyRule } from "./rules.js";
+import { applyRule, canonicalizeRule } from "./rules.js";
 import { setTheme, getTheme } from "./themes.js";
 import { restoreSnapshot, pushSimulationSnapshot, undo, redo } from "./history.js";
 import { stepSimulation, resetSimulation, randomFill, updateSimulation, commitStroke, setWrap } from "./sim.js";
@@ -55,10 +55,42 @@ import {
 // Orchestrator helper: applies a rule change coming from a user action and
 // surfaces the outcome via toast + updateUI. Keeps rules.js dependency-direction
 // clean (no showToast / updateUI imports in the middle layer).
-function applyRuleAndToast(ruleString) {
+function shareUrlForRule(rule = state.rule) {
+  const url = new URL(window.location.href);
+  url.searchParams.set("rule", rule);
+  return url.toString();
+}
+
+function syncRuleUrl(rule = state.rule) {
+  const url = new URL(window.location.href);
+  if (url.searchParams.get("rule") === rule) return;
+  url.searchParams.set("rule", rule);
+  window.history.replaceState(null, "", url);
+}
+
+function applyInitialRuleFromUrl() {
+  const rule = canonicalizeRule(new URL(window.location.href).searchParams.get("rule") || "");
+  if (rule) applyRule(rule);
+}
+
+function ruleFromBuilderToggle(button) {
+  const birth = new Set(state.rules?.birth || []);
+  const survive = new Set(state.rules?.survive || []);
+  const targetSet = button.dataset.ruleSection === "birth" ? birth : survive;
+  const value = Number(button.dataset.value);
+  if (targetSet.has(value)) targetSet.delete(value);
+  else targetSet.add(value);
+  const digits = (values) => [...values].sort((a, b) => a - b).join("");
+  return `B${digits(birth)}/S${digits(survive)}`;
+}
+
+function applyRuleAndToast(ruleString, { updateUrl = true } = {}) {
   const result = applyRule(ruleString);
   if (!result.success) showToast(result.message);
-  else showToast(`Ruleset set to ${result.rule}`);
+  else {
+    if (updateUrl) syncRuleUrl(result.rule);
+    showToast(`Ruleset set to ${result.rule}`);
+  }
   updateUI();
   return result;
 }
@@ -173,7 +205,8 @@ function hydrateDomReferences() {
     // Tools + pattern + rule + theme + advanced
     "tool-grid", "tool-active-label",
     "pattern-card", "pattern-card-preview", "pattern-card-name", "pattern-card-category",
-    "ruleset-select", "rule-input",
+    "ruleset-select", "rule-input", "rule-birth-digits", "rule-survive-digits",
+    "rule-description", "rule-share-btn",
     "theme-swatches",
     "toggle-buttons", "accent-picker",
     "undo-btn", "redo-btn",
@@ -413,6 +446,17 @@ function bindEvents() {
   els.ruleInput.addEventListener("change", () => {
     applyRuleAndToast(els.ruleInput.value);
   });
+  [els.ruleBirthDigits, els.ruleSurviveDigits].forEach((group) => {
+    group.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-rule-section]");
+      if (!button) return;
+      applyRuleAndToast(ruleFromBuilderToggle(button));
+    });
+  });
+  els.ruleShareBtn.addEventListener("click", () => {
+    copyText(shareUrlForRule());
+    showToast("Rule link copied.");
+  });
 
   // ----- Inspector: Accent picker -----
   els.accentPicker.addEventListener("input", () => {
@@ -571,6 +615,7 @@ function initialize() {
   setupUI();
   ensureCanvasSize(window.devicePixelRatio || 1);
   applyRule(state.rule);
+  applyInitialRuleFromUrl();
   setTheme("obsidian", true);
   state.paletteId = getTheme().defaultPalette;
   applyThemeToDOM();
@@ -589,7 +634,7 @@ function initialize() {
 // Public test hooks.
 window.render_game_to_text = renderGameToText;
 window.advanceTime = (ms) => { advanceSimulationBy(ms); };
-window.__gameOfLifeV2 = { state, exportToJson, exportToRle };
+window.__gameOfLifeV2 = { state, exportToJson, exportToRle, shareUrlForRule };
 
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initialize);

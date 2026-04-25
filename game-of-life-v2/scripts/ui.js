@@ -236,6 +236,40 @@ function chooseSelectOption(optionButton) {
   closeSelectPopover({ restoreFocus: true });
 }
 
+function getRuleDescription() {
+  const preset = RULESETS.find((item) => item.rule === state.rule);
+  return preset ? preset.description : "Custom rule built from selected birth and survival counts.";
+}
+
+function createRuleDigitButton(section, value) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "rule-digit";
+  button.dataset.ruleSection = section;
+  button.dataset.value = String(value);
+  button.textContent = String(value);
+  button.setAttribute("aria-pressed", "false");
+  button.setAttribute("aria-label", `${section === "birth" ? "Birth" : "Survival"} count ${value}`);
+  return button;
+}
+
+export function syncRuleLab() {
+  const birth = state.rules?.birth || new Set();
+  const survive = state.rules?.survive || new Set();
+  [els.ruleBirthDigits, els.ruleSurviveDigits].forEach((group) => {
+    if (!group) return;
+    Array.from(group.children).forEach((button) => {
+      const value = Number(button.dataset.value);
+      const active = button.dataset.ruleSection === "birth"
+        ? birth.has(value)
+        : survive.has(value);
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+  });
+  if (els.ruleDescription) els.ruleDescription.textContent = getRuleDescription();
+}
+
 function openSelectPopover(select, proxyButton) {
   if (activeSelect === select && els.selectPopover.classList.contains("visible")) {
     closeSelectPopover({ restoreFocus: true });
@@ -473,6 +507,11 @@ export function setupUI() {
   els.rulesetSelect.appendChild(customOption);
   upgradeSelect(els.rulesetSelect);
 
+  for (let value = 0; value <= 8; value += 1) {
+    els.ruleBirthDigits.appendChild(createRuleDigitButton("birth", value));
+    els.ruleSurviveDigits.appendChild(createRuleDigitButton("survive", value));
+  }
+
   // Pattern category (pattern modal)
   CATEGORY_OPTIONS.forEach((category) => {
     const option = document.createElement("option");
@@ -628,6 +667,7 @@ export function updateUI() {
   els.rulesetSelect.value = RULESETS.find((r) => r.rule === state.rule) ? state.rule : "custom";
   syncSelectProxyLabel(els.rulesetSelect);
   els.ruleInput.value = state.rule;
+  syncRuleLab();
   if (els.exportNote) els.exportNote.textContent = `Exports use ${state.rule}.`;
   els.accentPicker.value = state.accent;
 

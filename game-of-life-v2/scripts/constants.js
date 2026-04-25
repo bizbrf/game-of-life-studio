@@ -27,11 +27,11 @@ export const TOOL_ORDER = [
 ];
 
 export const RULESETS = [
-  { label: "Conway", rule: "B3/S23" },
-  { label: "HighLife", rule: "B36/S23" },
-  { label: "Day & Night", rule: "B3678/S34678" },
-  { label: "Seeds", rule: "B2/S" },
-  { label: "Life without Death", rule: "B3/S012345678" },
+  { label: "Conway", rule: "B3/S23", description: "Balanced growth with gliders, still lifes, and oscillators." },
+  { label: "HighLife", rule: "B36/S23", description: "Conway-like behavior with extra replication from birth on six neighbors." },
+  { label: "Day & Night", rule: "B3678/S34678", description: "Dense inverse-symmetric worlds where empty and full regions echo each other." },
+  { label: "Seeds", rule: "B2/S", description: "Explosive patterns where every live cell dies each generation." },
+  { label: "Life without Death", rule: "B3/S012345678", description: "Growth-only worlds where live cells never die." },
 ];
 
 export const PALETTES = {

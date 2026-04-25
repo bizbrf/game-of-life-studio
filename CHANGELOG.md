@@ -6,7 +6,19 @@ The narrative dev log lives in [docs/journal.md](docs/journal.md). This file rec
 
 ## [Unreleased]
 
-No unreleased changes.
+### Added
+- GitHub Actions CI for whitespace checks, JavaScript syntax checks, and a headless browser smoke path.
+
+### Changed
+- Pattern cycling moved from reserved `Tab` / `Shift+Tab` to `P` / `Shift+P` so native focus navigation works in panels and popovers.
+- JSON export now includes accent, wrap, grid, particles, speed, and camera state for a fuller round trip.
+
+### Fixed
+- Wrap mode now canonicalizes existing live cells when enabled, preventing out-of-bounds survivor keys during wrapped simulation.
+- Speed and rule popovers no longer let global shortcuts intercept focused menu controls.
+- Custom accent previews now redraw from `state.accent`.
+- I/O modal accepts dropped files as well as the upload button.
+- Modal panels now expose dialog semantics.
 
 ## [1.0.0] - 2026-04-25
 

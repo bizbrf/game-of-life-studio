@@ -1,11 +1,12 @@
 // RLE and JSON import/export.
 
+import { PALETTES, THEMES } from "./constants.js";
 import { state } from "./state.js";
 import { keyFromXY, xyFromKey, cloneMapEntries } from "./utils.js";
 import { applyRule, canonicalizeRule, compileRule } from "./rules.js";
 import { setTheme, getTheme } from "./themes.js";
 import { commitDiffFromMaps, pushSimulationSnapshot } from "./history.js";
-import { normalizeKeyForState } from "./sim.js";
+import { normalizeWrappedCoord, normalizeKeyForState } from "./sim.js";
 
 export function exportToJson() {
   return JSON.stringify({
@@ -13,6 +14,16 @@ export function exportToJson() {
     rule: state.rule,
     theme: getTheme().id,
     palette: state.paletteId,
+    accent: state.accent,
+    wrap: state.wrap,
+    gridLines: state.gridLines,
+    particles: state.particles,
+    speed: state.speed,
+    camera: {
+      x: state.camera.x,
+      y: state.camera.y,
+      zoom: state.camera.zoom,
+    },
     cells: cloneMapEntries(state.liveCells),
   }, null, 2);
 }
@@ -73,6 +84,53 @@ export function parseRLE(text) {
   return { cells, rule: canonicalizeRule(match[3] || "") };
 }
 
+function validateTheme(themeId) {
+  if (themeId === undefined) return;
+  if (!THEMES.some((theme) => theme.id === themeId)) {
+    throw new Error("Invalid theme in JSON.");
+  }
+}
+
+function validatePalette(paletteId) {
+  if (paletteId === undefined) return;
+  if (!Object.hasOwn(PALETTES, paletteId)) {
+    throw new Error("Invalid palette in JSON.");
+  }
+}
+
+function validateAccent(accent) {
+  if (accent === undefined) return;
+  if (typeof accent !== "string" || !/^#[0-9a-f]{6}$/i.test(accent)) {
+    throw new Error("Invalid accent in JSON. Expected a #rrggbb hex color.");
+  }
+}
+
+function validateSpeed(speed) {
+  if (speed === undefined) return;
+  if (speed === "max") return;
+  if (!Number.isInteger(speed) || speed < 1 || speed > 60) {
+    throw new Error("Invalid speed in JSON. Expected 1-60 or max.");
+  }
+}
+
+function readBoolean(data, key, fallback) {
+  if (data[key] === undefined) return fallback;
+  if (typeof data[key] !== "boolean") throw new Error(`Invalid ${key} in JSON. Expected a boolean.`);
+  return data[key];
+}
+
+function readCamera(camera) {
+  if (camera === undefined) return state.camera;
+  if (!camera || typeof camera !== "object" || Array.isArray(camera)) {
+    throw new Error("Invalid camera in JSON. Expected finite x, y, and positive zoom.");
+  }
+  const { x, y, zoom } = camera;
+  if (![x, y, zoom].every((value) => typeof value === "number" && Number.isFinite(value)) || zoom <= 0) {
+    throw new Error("Invalid camera in JSON. Expected finite x, y, and positive zoom.");
+  }
+  return { x, y, zoom };
+}
+
 export function importJson(text) {
   const data = JSON.parse(text);
   if (!Array.isArray(data.cells)) throw new Error("JSON must contain a cells array.");
@@ -83,6 +141,14 @@ export function importJson(text) {
   if (data.rule && !compileRule(data.rule)) {
     throw new Error("Invalid rule. Use B/S notation like B3/S23.");
   }
+  validateTheme(data.theme);
+  validatePalette(data.palette);
+  validateAccent(data.accent);
+  validateSpeed(data.speed);
+  const nextWrap = readBoolean(data, "wrap", state.wrap);
+  const nextGridLines = readBoolean(data, "gridLines", state.gridLines);
+  const nextParticles = readBoolean(data, "particles", state.particles);
+  const nextCamera = readCamera(data.camera);
   const importedCells = new Map();
   for (let i = 0; i < data.cells.length; i += 1) {
     const entry = data.cells[i];
@@ -94,7 +160,8 @@ export function importJson(text) {
       throw new Error(`Invalid cell entry at index ${i}. Expected integer key and positive integer age.`);
     }
     const [x, y] = xyFromKey(key);
-    importedCells.set(normalizeKeyForState(x, y), age);
+    const normalizedKey = nextWrap ? keyFromXY(...normalizeWrappedCoord(x, y)) : keyFromXY(x, y);
+    importedCells.set(normalizedKey, Math.max(importedCells.get(normalizedKey) || 0, age));
   }
   let generation = 0;
   if (data.generation !== undefined) {
@@ -105,9 +172,17 @@ export function importJson(text) {
     generation = parsed;
   }
   const before = new Map(state.liveCells);
+  state.wrap = nextWrap;
   state.liveCells = importedCells;
   if (data.rule) applyRule(data.rule);
   if (data.theme) setTheme(data.theme, true);
+  if (data.palette !== undefined) state.paletteId = data.palette;
+  if (data.accent !== undefined) state.accent = data.accent.toLowerCase();
+  else if (state.paletteId !== "custom") state.accent = getTheme().colors.accent;
+  state.gridLines = nextGridLines;
+  state.particles = nextParticles;
+  if (data.speed !== undefined) state.speed = data.speed;
+  state.camera = nextCamera;
   state.generation = generation;
   commitDiffFromMaps(before, state.liveCells, "Import JSON");
   state.populationHistory = [state.liveCells.size];

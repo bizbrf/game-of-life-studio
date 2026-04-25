@@ -14,6 +14,7 @@ import { getRuleLabel } from "./rules.js";
 import { getCurrentPattern, selectPattern, setTool } from "./tools.js";
 import { syncAudioState } from "./audio.js";
 import { drawSparkline, drawPatternPreview, ensureCanvasSize } from "./render.js";
+import { setWrap } from "./sim.js";
 
 // themes.setTheme is state-only. applyThemeToDOM writes the CSS custom
 // properties, colorScheme, and accentPicker sync. Every caller of
@@ -185,7 +186,8 @@ export function openSpeedPopover() {
   els.speedPopover.style.bottom = `${window.innerHeight - rect.top + 10}px`;
   els.speedPopover.classList.add("visible");
   els.speedChip.setAttribute("aria-expanded", "true");
-  // Keyboard users land on the first option so Tab cycles inside the popover.
+  // Keyboard users land on the first option; native Tab navigation then moves
+  // through every option and the custom speed range.
   const firstOption = els.speedPopover.querySelector(".option");
   if (firstOption) firstOption.focus();
 }
@@ -327,6 +329,15 @@ function upgradeSelect(select) {
 // closeInspector can return to it. null when the drawer is closed.
 let inspectorLastFocused = null;
 
+function focusWithoutScroll(element) {
+  if (!element) return;
+  try {
+    element.focus({ preventScroll: true });
+  } catch (_error) {
+    element.focus();
+  }
+}
+
 export function openInspector() {
   inspectorLastFocused = document.activeElement;
   state.inspectorOpen = true;
@@ -334,7 +345,9 @@ export function openInspector() {
   els.inspector.setAttribute("aria-hidden", "false");
   els.inspectorToggle.setAttribute("aria-expanded", "true");
   document.body.classList.add("inspector-open");
-  if (els.inspectorClose) els.inspectorClose.focus();
+  requestAnimationFrame(() => {
+    if (state.inspectorOpen) focusWithoutScroll(els.inspectorClose);
+  });
 }
 
 export function closeInspector() {
@@ -360,12 +373,11 @@ export function toggleInspector() {
 // Skip the canvas redraw when nothing visible has changed. Called every
 // frame via updateUI, so this gate avoids hundreds of drawRoundedRect
 // calls/second for a preview that looks identical frame to frame.
-// Key = (patternIndex, themeId). The accent passed to drawPatternPreview
-// is always getTheme().colors.accent (matching renderPatternBrowser) so
-// the card and the modal's browser grid stay visually consistent under
-// a custom accent picker.
+// Key = (patternIndex, themeId, accent). Custom accents update state.accent
+// without changing themeId, so the accent is part of the cache key.
 let lastRenderedPatternIdx = -1;
 let lastRenderedThemeId = null;
+let lastRenderedAccent = null;
 
 export function renderPatternCard() {
   const pattern = getCurrentPattern();
@@ -373,12 +385,15 @@ export function renderPatternCard() {
   if (els.patternCardCategory) els.patternCardCategory.textContent = pattern.category;
   if (!els.patternCardPreview) return;
   const themeId = getTheme().id;
-  if (state.patternIndex === lastRenderedPatternIdx && themeId === lastRenderedThemeId) {
+  if (state.patternIndex === lastRenderedPatternIdx
+      && themeId === lastRenderedThemeId
+      && state.accent === lastRenderedAccent) {
     return;
   }
-  drawPatternPreview(els.patternCardPreview, pattern, getTheme().colors.accent);
+  drawPatternPreview(els.patternCardPreview, pattern, state.accent);
   lastRenderedPatternIdx = state.patternIndex;
   lastRenderedThemeId = themeId;
+  lastRenderedAccent = state.accent;
 }
 
 // ---------- Sparkline popover ----------
@@ -418,7 +433,7 @@ export function renderPatternBrowser() {
     const preview = document.createElement("canvas");
     preview.width = 120;
     preview.height = 78;
-    drawPatternPreview(preview, pattern, getTheme().colors.accent);
+    drawPatternPreview(preview, pattern, state.accent);
     const description = document.createElement("div");
     description.className = "subtitle";
     description.textContent = pattern.description;
@@ -491,7 +506,8 @@ export function setupUI() {
     button.textContent = label;
     button.setAttribute("aria-pressed", String(!!state[key]));
     button.addEventListener("click", () => {
-      state[key] = !state[key];
+      if (key === "wrap") setWrap(!state.wrap);
+      else state[key] = !state[key];
       if (key === "sound") syncAudioState();
       updateUI();
     });

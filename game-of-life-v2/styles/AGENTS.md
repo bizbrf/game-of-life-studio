@@ -23,7 +23,7 @@ All colours, spacing, blurs, and radii are CSS custom properties declared in `:r
 - **Do not introduce new breakpoints without a comment.** The app is responsive by composition, not by breakpoint proliferation.
 - **Do not introduce `!important`.** If you need it, the rule is too specific. Flatten first.
 - **Match existing design restraint.** The target is Apple HIG / Linear / Arc — calm, intentional, not flashy. If a change adds noise (new gradients, shadows, glow effects), justify it in the journal.
-- **Custom select and popover classes exist** (`.native-select-hidden`, `.select-proxy`, `.select-popover`, `.select-option`) but the JS wiring is incomplete. See [../../docs/handoffs/2026-04-14-initial-handoff.md](../../docs/handoffs/2026-04-14-initial-handoff.md).
+- **Custom select and popover classes are wired in `ui.js`.** Keep visible proxy controls and hidden native selects in sync; native selects remain app-state controls for import/export and tests.
 
 ## Change protocol
 

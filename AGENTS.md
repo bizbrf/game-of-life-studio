@@ -73,4 +73,4 @@ Scope creep is the default failure mode. Stay in the lane the task named.
 
 ## Current focus
 
-Cycle D and the custom select / popover replacement are complete. The project is at first-release prep (`v1.0.0`); after release, the next work should start from a fresh feature discussion or a new roadmap issue rather than the archived handoff.
+`v1.0.0` is released. Current follow-up work is post-release hardening: keyboard accessibility, release automation, and small documentation corrections before new feature brainstorming.

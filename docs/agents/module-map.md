@@ -54,7 +54,7 @@ Minimal list to help agents pick the right module without reading every file. Wh
 `undo` and `redo` return `{ success: true } | { success: false, message }`.
 
 ### `sim.js`
-`normalizeWrappedCoord`, `normalizeKeyForState`, `computeNeighborCountMap`, `animateDeaths`, `updateFadeAnimations`, `stepSimulation`, `resetSimulation`, `randomFill`, `addCells`, `commitStroke`, `updateSimulation`
+`normalizeWrappedCoord`, `normalizeKeyForState`, `setWrap`, `computeNeighborCountMap`, `animateDeaths`, `updateFadeAnimations`, `stepSimulation`, `resetSimulation`, `randomFill`, `addCells`, `commitStroke`, `updateSimulation`
 
 `randomFill` returns `{ message }` so the caller can surface the toast.
 

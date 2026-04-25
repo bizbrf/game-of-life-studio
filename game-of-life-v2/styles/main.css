@@ -743,8 +743,16 @@ body.rewinding .status-strip .dot {
   position: absolute;
   width: 1px;
   height: 1px;
+  min-width: 0;
+  max-width: 1px;
+  padding: 0;
+  margin: -1px;
+  border: 0;
   opacity: 0;
+  overflow: hidden;
   pointer-events: none;
+  white-space: nowrap;
+  clip: rect(0 0 0 0);
   clip-path: inset(50%);
 }
 

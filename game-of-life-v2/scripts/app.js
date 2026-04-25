@@ -6,7 +6,7 @@ import { clamp, xyFromKey } from "./utils.js";
 import { applyRule } from "./rules.js";
 import { setTheme, getTheme } from "./themes.js";
 import { restoreSnapshot, pushSimulationSnapshot, undo, redo } from "./history.js";
-import { stepSimulation, resetSimulation, randomFill, updateSimulation, commitStroke } from "./sim.js";
+import { stepSimulation, resetSimulation, randomFill, updateSimulation, commitStroke, setWrap } from "./sim.js";
 import { getCurrentPattern, selectPattern, setTool } from "./tools.js";
 import { configureAudioContext, syncAudioState } from "./audio.js";
 import {
@@ -71,10 +71,15 @@ function handleKeydown(event) {
     if (event.key === "Escape") event.target.blur();
     return;
   }
+  const target = event.target;
+  const isInsideOpenPopover =
+    (els.speedPopover?.classList.contains("visible") && els.speedPopover.contains(target))
+    || (els.rulePopover?.classList.contains("visible") && els.rulePopover.contains(target))
+    || (els.selectPopover?.classList.contains("visible") && els.selectPopover.contains(target));
+  if (isInsideOpenPopover) return;
   // When a modal is open, let the modal's own Tab-trap handler drive focus.
-  // Without this guard, the document-level Tab case below would also fire
-  // selectPattern + preventDefault on every Tab, breaking the trap and
-  // quietly mutating state.patternIndex.
+  // This preserves native focus movement before the broader modal-shortcut
+  // guard below ignores global commands.
   if (event.key === "Tab" && isModalOpen()) return;
   if (event.key === "Escape") {
     event.preventDefault();
@@ -93,7 +98,7 @@ function handleKeydown(event) {
     }
   }
   // While a modal is open, the document-level global shortcuts (Space, R,
-  // F, G, W, T, 1-6, Tab, Ctrl+K/Z) must not fire — they would mutate sim
+  // F, G, W, T, 1-6, P, Ctrl+K/Z) must not fire — they would mutate sim
   // state from behind the dialog and hijack Space/Enter activations on the
   // modal's focused button.
   if (isModalOpen()) return;
@@ -122,13 +127,13 @@ function handleKeydown(event) {
     case "r": case "R": resetSimulation(); break;
     case "f": case "F": showToast(randomFill(visibleWorldBounds(0)).message); break;
     case "g": case "G": state.gridLines = !state.gridLines; break;
-    case "w": case "W": state.wrap = !state.wrap; break;
+    case "w": case "W": setWrap(!state.wrap); break;
     case "t": case "T": cycleTheme(); break;
     case "h": case "H":
       state.modals.has("help-modal") ? closeModal("help-modal") : openModal("help-modal");
       break;
     case "?": event.preventDefault(); openModal("help-modal"); break;
-    case "Tab":
+    case "p": case "P":
       event.preventDefault();
       selectPattern(state.patternIndex + (event.shiftKey ? -1 : 1), true);
       updateUI();
@@ -175,7 +180,7 @@ function hydrateDomReferences() {
     "history-slider", "history-live-btn", "history-forward-btn",
     // Modals
     "pattern-search", "pattern-category", "pattern-browser-grid",
-    "import-text", "export-text", "export-note",
+    "io-modal", "import-text", "export-text", "export-note",
     "import-rle-btn", "import-json-btn", "upload-btn",
     "export-rle-btn", "export-json-btn", "copy-export-btn",
     "file-input", "toast-layer",
@@ -192,6 +197,17 @@ function advanceSimulationBy(ms) {
   updateParticles(dt);
   updateSimulation(dt);
   draw();
+}
+
+async function loadImportFile(file) {
+  if (!file) return;
+  try {
+    els.importText.value = await file.text();
+    showToast(`Loaded ${file.name}`);
+  } catch (error) {
+    const message = error?.message || (error == null ? "read failed" : String(error));
+    showToast(`Could not read ${file.name}: ${message}`);
+  }
 }
 
 function bindEvents() {
@@ -461,16 +477,13 @@ function bindEvents() {
     catch (error) { showToast(error.message || "JSON import failed."); }
   });
   els.uploadBtn.addEventListener("click", () => els.fileInput.click());
-  els.fileInput.addEventListener("change", async () => {
-    const file = els.fileInput.files[0];
-    if (!file) return;
-    try {
-      els.importText.value = await file.text();
-      showToast(`Loaded ${file.name}`);
-    } catch (error) {
-      const message = error?.message || (error == null ? "read failed" : String(error));
-      showToast(`Could not read ${file.name}: ${message}`);
-    }
+  els.fileInput.addEventListener("change", () => loadImportFile(els.fileInput.files[0]));
+  els.ioModal.addEventListener("dragover", (event) => {
+    event.preventDefault();
+  });
+  els.ioModal.addEventListener("drop", (event) => {
+    event.preventDefault();
+    loadImportFile(event.dataTransfer?.files?.[0]);
   });
   els.exportRleBtn.addEventListener("click", () => { els.exportText.value = exportToRle(); });
   els.exportJsonBtn.addEventListener("click", () => { els.exportText.value = exportToJson(); });

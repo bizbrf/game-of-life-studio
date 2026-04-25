@@ -160,10 +160,10 @@
 
     <!-- HELP MODAL -->
     <div class="modal-backdrop" id="help-modal" aria-hidden="true">
-      <div class="modal">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="help-modal-title">
         <div class="modal-header panel-row">
           <div class="stack">
-            <div class="title">Shortcuts</div>
+            <div class="title" id="help-modal-title">Shortcuts</div>
           </div>
           <button class="icon ghost close-modal" data-close="help-modal" type="button" aria-label="Close help">✕</button>
         </div>
@@ -176,7 +176,7 @@
             <div><kbd>G</kbd> Toggle grid</div>
             <div><kbd>W</kbd> Toggle wrap</div>
             <div><kbd>T</kbd> Cycle themes</div>
-            <div><kbd>Tab</kbd> Next pattern · <kbd>Shift+Tab</kbd> previous</div>
+            <div><kbd>P</kbd> Next pattern · <kbd>Shift+P</kbd> previous</div>
             <div><kbd>H</kbd> / <kbd>?</kbd> Help</div>
             <div><kbd>Esc</kbd> Close overlays</div>
           </div>
@@ -196,10 +196,10 @@
 
     <!-- PATTERN LIBRARY MODAL -->
     <div class="modal-backdrop" id="pattern-modal" aria-hidden="true">
-      <div class="modal large">
+      <div class="modal large" role="dialog" aria-modal="true" aria-labelledby="pattern-modal-title">
         <div class="modal-header panel-row">
           <div class="stack">
-            <div class="title">Pattern Library</div>
+            <div class="title" id="pattern-modal-title">Pattern Library</div>
           </div>
           <button class="icon ghost close-modal" data-close="pattern-modal" type="button" aria-label="Close pattern library">✕</button>
         </div>
@@ -219,10 +219,10 @@
 
     <!-- I/O MODAL -->
     <div class="modal-backdrop" id="io-modal" aria-hidden="true">
-      <div class="modal large">
+      <div class="modal large" role="dialog" aria-modal="true" aria-labelledby="io-modal-title">
         <div class="modal-header panel-row">
           <div class="stack">
-            <div class="title">Import / Export</div>
+            <div class="title" id="io-modal-title">Import / Export</div>
           </div>
           <button class="icon ghost close-modal" data-close="io-modal" type="button" aria-label="Close import export">✕</button>
         </div>

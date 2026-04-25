@@ -75,7 +75,7 @@ Any static file server works. Python's built-in is the simplest.
 | `Ctrl/Cmd + K` | Toggle inspector |
 | `Ctrl/Cmd + Z` | Undo |
 | `Ctrl/Cmd + Shift + Z` | Redo |
-| `Tab` / `Shift + Tab` | Next / previous pattern |
+| `P` / `Shift + P` | Next / previous pattern |
 | `+` / `-` | Speed up / slow down (large step) |
 | `]` / `[` | Speed up / slow down (small step) |
 | `1`–`6` | Select tool (freehand, eraser, stamp, line, box, circle) |

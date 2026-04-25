@@ -22,6 +22,39 @@ export function normalizeKeyForState(x, y) {
   return state.wrap ? keyFromXY(...normalizeWrappedCoord(x, y)) : keyFromXY(x, y);
 }
 
+function mergeLiveCellAge(existing, next) {
+  return Math.max(existing || 0, next || 0);
+}
+
+function normalizeLiveCellsForWrap() {
+  if (!state.wrap || !state.liveCells.size) return false;
+  const normalized = new Map();
+  let changed = false;
+  for (const [key, age] of state.liveCells.entries()) {
+    const [x, y] = xyFromKey(key);
+    const normalizedKey = normalizeKeyForState(x, y);
+    normalized.set(normalizedKey, mergeLiveCellAge(normalized.get(normalizedKey), age));
+    if (normalizedKey !== key) changed = true;
+  }
+  if (normalized.size !== state.liveCells.size) changed = true;
+  if (!changed) return false;
+  state.liveCells = normalized;
+  state.populationHistory = state.populationHistory
+    .concat(state.liveCells.size)
+    .slice(-MAX_SPARKLINE_POINTS);
+  state.simulationHistory = [];
+  pushSimulationSnapshot();
+  return true;
+}
+
+export function setWrap(enabled) {
+  const nextWrap = Boolean(enabled);
+  if (state.wrap === nextWrap) return false;
+  state.wrap = nextWrap;
+  if (state.wrap) return normalizeLiveCellsForWrap();
+  return false;
+}
+
 export function computeNeighborCountMap() {
   const counts = new Map();
   for (const key of state.liveCells.keys()) {

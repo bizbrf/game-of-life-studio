@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  app-smoke:
+    name: Static checks and browser smoke
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Check whitespace
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch origin "${{ github.base_ref }}" --depth=1
+            git diff --check "origin/${{ github.base_ref }}...HEAD"
+          else
+            git diff-tree --check --no-commit-id --root -r HEAD
+          fi
+
+      - name: Check JavaScript syntax
+        run: |
+          find game-of-life-v2/scripts tests \( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' \) | sort | while read -r file; do
+            node --check "$file"
+          done
+
+      - name: Install Playwright smoke tooling
+        run: |
+          npm install --prefix "$RUNNER_TEMP/playwright" playwright@1.52.0
+          "$RUNNER_TEMP/playwright/node_modules/.bin/playwright" install --with-deps chromium
+
+      - name: Start static server
+        run: |
+          python -m http.server 8765 --bind 127.0.0.1 &
+          echo "$!" > server.pid
+
+      - name: Run browser smoke
+        env:
+          APP_URL: http://127.0.0.1:8765/game-of-life-v2/index.html
+          NODE_PATH: ${{ runner.temp }}/playwright/node_modules
+        run: node tests/browser-smoke.cjs

@@ -82,6 +82,11 @@ Original prompt: Build a complete Game of Life v2 as a single self-contained `in
   - Cleaned local scratch artifacts, ignored `.playwright-mcp/` and root `grid-evolution-*.png`, refreshed canonical README screenshots (`rest.png`, `inspector-open.png`, `running.png`), and promoted `CHANGELOG.md` from Unreleased to `1.0.0`.
   - Verification: GitHub Pages is configured from `main` and reported `built`; local screenshot capture reported no console/page errors.
   - Weak spot: GitHub Pages can only be checked for the merged/tagged commit after release PR merge because Pages deploys from `main`.
+- 2026-04-25 — Post-release hardening pass.
+  - Fixed keyboard regressions: pattern cycling moved from `Tab` to `P`, document shortcuts no longer intercept focused popover controls, and inspector focus uses `preventScroll`.
+  - Fixed wrap canonicalization on enable, expanded JSON state round-tripping, restored custom-accent pattern previews, added I/O drag/drop, modal dialog semantics, a release checklist, and GitHub Actions smoke CI.
+  - Verification: `node --check` passed for touched scripts and `tests/browser-smoke.cjs`; `git diff --check` passed; local Chromium smoke covered inspector Tab navigation, speed/rule popover Tab paths, wrap canonicalization, JSON round-trip state, mobile inspector chrome position, and zero console/page errors. Screenshot: [docs/screenshots/2026-04-25-post-release-hardening.png](docs/screenshots/2026-04-25-post-release-hardening.png).
+  - Weak spot: CI installs Playwright into a temp prefix because the app intentionally has no package manifest; if automated tests grow, a dedicated test-tooling ADR may be warranted.
 - 2026-04-14 — Landed the 4 correctness fixes from [docs/review/findings-bugs.md](review/findings-bugs.md) (Batch 2) on `fix/review-batch-2-bugs`, 4 atomic commits:
   - `endInteraction` pinch-zoom crash — added a `touch-panzoom` guard next to the existing `pan` guard in [game-of-life-v2/scripts/input.js](game-of-life-v2/scripts/input.js).
   - Sparkline fill polygon — [game-of-life-v2/scripts/render.js](game-of-life-v2/scripts/render.js) now opens a fresh path after `stroke()`, walks the data again, and closes through both bottom corners. Screenshot: [output/batch2-sparkline-closeup.png](output/batch2-sparkline-closeup.png) shows the correct vertical left edge.

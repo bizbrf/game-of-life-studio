@@ -73,4 +73,4 @@ Scope creep is the default failure mode. Stay in the lane the task named.
 
 ## Current focus
 
-Cycle D (code review of the 15-module split) has not started yet. The most recent deferred UI item is the custom select / popover replacement — see [docs/handoffs/2026-04-14-initial-handoff.md](docs/handoffs/2026-04-14-initial-handoff.md) for prior context.
+Cycle D and the custom select / popover replacement are complete. The project is at first-release prep (`v1.0.0`); after release, the next work should start from a fresh feature discussion or a new roadmap issue rather than the archived handoff.

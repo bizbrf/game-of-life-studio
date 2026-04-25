@@ -38,6 +38,8 @@ npm-debug.log*
 # Local scratch output — screenshots promoted to docs/screenshots/ live in the repo;
 # everything else here stays local.
 output/
+.playwright-mcp/
+grid-evolution-*.png
 
 # Legacy prototypes (tracked in separate repos or retained as local-only reference)
 _legacy/

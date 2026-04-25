@@ -6,6 +6,10 @@ The narrative dev log lives in [docs/journal.md](docs/journal.md). This file rec
 
 ## [Unreleased]
 
+No unreleased changes.
+
+## [1.0.0] - 2026-04-25
+
 ### Added
 - Initial repository setup with LICENSE (MIT), README, CONTRIBUTING, and GitHub issue/PR templates.
 - `AGENTS.md` framework: root contract plus per-folder rules for `scripts/` and `styles/`.
@@ -13,16 +17,20 @@ The narrative dev log lives in [docs/journal.md](docs/journal.md). This file rec
 - First three ADRs: sparse grid representation, no-build/no-framework stance, module split boundaries.
 - Canonical screenshots in `docs/screenshots/`.
 - Live demo via GitHub Pages.
+- Custom select/listbox controls for ruleset and pattern category selection while retaining native selects as app-state controls.
 
 ### Changed
 - `CLAUDE-HANDOFF.md` archived as `docs/handoffs/2026-04-14-initial-handoff.md`; durable rules folded into `AGENTS.md`.
 - `progress.md` renamed to `docs/journal.md`.
 - `IMPLEMENTATION-SPEC.md` moved to `docs/specs/2026-04-14-v2-implementation-spec.md`.
 - **Architecture**: no middle-layer module imports from `ui.js`. `applyRule`, `undo`, `redo`, `randomFill` return `{ success, message }` result objects; `app.js` surfaces toasts and calls `updateUI`. Keyboard dispatch (`handleKeydown`) moved from `input.js` to `app.js`. `ADR-0003` retires the "one known exception" language.
+- **Architecture**: middle-layer DOM/browser boundary cleanup completed for Cycle D. Theme DOM projection lives in `ui.js`, render no longer reads CSS through `getComputedStyle`, `sim.randomFill` receives viewport bounds from callers, and `app.js` injects the browser audio constructor into `audio.js`.
+- Canonical README screenshots refreshed for the current inspector, running, and rest states.
 
 ### Fixed
 - Batch 2 review (bugs): pinch-zoom TypeError on geometry tools, sparkline fill-polygon geometry, sparkline canvas zero-size transform reset, freehand stroke produces one undo entry instead of one-per-cell.
 - Batch 1 review (architecture): `state.js ↔ rules.js` circular import, four undocumented `ui.js` imports from `history`/`sim`/`tools`/`input`, and inaccurate `module-map.md` entries now reflect reality.
+- JSON import validation now rejects malformed cell keys, invalid ages, and negative/fractional generations before mutating state.
 
 ### Removed
 - Ad-hoc iteration screenshots from `output/`; three canonical ones promoted to `docs/screenshots/`.

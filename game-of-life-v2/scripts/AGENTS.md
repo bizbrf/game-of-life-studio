@@ -16,7 +16,7 @@ Plain ES modules. Loaded by `index.html` as `<script type="module">`. No build s
 | `history.js` | Undo/redo stack, simulation snapshot ring, population history. |
 | `sim.js` | Simulation step, reset, random fill, neighbour counting, wrap. |
 | `tools.js` | Drawing tool geometry (line/box/circle/stamp), tool + pattern selection. |
-| `audio.js` | Ambient hum + step sound. Lazy-inits AudioContext. |
+| `audio.js` | Ambient hum + step sound. Uses the AudioContext constructor injected by `app.js`. |
 | `render.js` | Canvas rendering, world↔screen coords, particles, sparkline, pattern preview. |
 | `io.js` | RLE and JSON import/export. |
 | `input.js` | Pointer/touch interaction, zoom, autoFit. Keyboard dispatch lives in `app.js`. |

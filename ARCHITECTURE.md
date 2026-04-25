@@ -86,16 +86,15 @@ idle
 ## Known warts
 
 - **`state.js` mixes app-wide simulation state with DOM-ref caches (`els`, `canvasRefs`).** Functional, but the shape signals two different concerns. Splitting is a cycle-D candidate.
-- **`sim.randomFill` calls `render.visibleWorldBounds`** — same-layer dependency; `randomFill` needs the visible viewport when wrap is off. Candidate for extraction to a pure helper; tracked in Batch 4 of the review.
-- **`themes.js` writes CSS custom properties directly to `document.documentElement`**, and `render.js` reads them back via `getComputedStyle` each frame — violates the "DOM access lives in `app.js` / `ui.js`" invariant. Tracked in Batch 4.
 
 Historical: `rules.js → ui.js` (showToast) was documented here as the one known exception. It was resolved in Batch 1 — middle-layer modules now return result objects and callers in `app.js` / `ui.js` surface toasts and call `updateUI`. See [ADR-0003](docs/adr/0003-module-split-boundaries.md).
+Historical: `themes.js` / `render.js` DOM and CSS round-trips, `sim.js → render.js` for viewport bounds, and `audio.js → window.AudioContext` were resolved during the Cycle D cleanup. Theme DOM projection now lives in `ui.applyThemeToDOM()`, `randomFill` receives viewport bounds from callers, and `app.js` injects the browser audio constructor into `audio.js`.
 
 ## Cross-cutting concerns
 
 ### Themes
 
-`themes.js` sets a theme by (a) toggling `data-theme` attributes on `<html>` and (b) writing palette RGB values into CSS custom properties. The `main.css` token system consumes those. This keeps the simulation code theme-oblivious.
+`themes.js` is state-only: it selects the active theme, palette, and accent. `ui.applyThemeToDOM()` projects that state to `<html>` attributes and CSS custom properties consumed by `main.css`. This keeps simulation and rendering logic theme-oblivious while preserving one DOM projection point.
 
 ### Persistence
 

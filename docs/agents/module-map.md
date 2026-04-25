@@ -15,16 +15,14 @@ For narrative context see [../../ARCHITECTURE.md](../../ARCHITECTURE.md).
 | 5 | `rules.js` | B/S rule parse, compile, apply. | `constants`, `state` |
 | 6 | `themes.js` | Theme + palette switching. | `constants`, `state`, `utils` |
 | 7 | `history.js` | Undo/redo + rewind snapshots. | `constants`, `state`, `utils` |
-| 8 | `sim.js` | Simulation step, reset, random fill. | `constants`, `state`, `utils`, `history`, `audio`, `render`† |
+| 8 | `sim.js` | Simulation step, reset, random fill. | `constants`, `state`, `utils`, `history`, `audio` |
 | 9 | `tools.js` | Drawing tool geometry + selection. | `patterns`, `state`, `utils` |
-| 10 | `audio.js` | Ambient hum + step sound. | `state` |
+| 10 | `audio.js` | Ambient hum + step sound. Browser audio constructor is injected by `app.js`. | `state` |
 | 11 | `render.js` | Canvas draw, coords, particles, sparkline. | `constants`, `state`, `utils`, `themes`, `tools` |
 | 12 | `io.js` | RLE + JSON import/export. | `state`, `utils`, `rules`, `themes`, `history`, `sim` |
 | 13 | `input.js` | Pointer/touch, zoom, autoFit. | `constants`, `state`, `utils`, `tools`, `sim`, `render` |
 | 14 | `ui.js` | DOM wiring — toolbar, inspector, modals. | `constants`, `patterns`, `state`, `utils`, `themes`, `rules`, `tools`, `audio`, `render` |
 | 15 | `app.js` | Entry point, event binding, RAF loop, keyboard shortcuts. | everything |
-
-† `sim.js → render.js` for `visibleWorldBounds` is a same-layer dependency; `randomFill` needs the visible viewport when wrap is off. Candidate for extraction to a pure helper — tracked in Batch 4 of the review.
 
 ## Public surface per module
 
@@ -66,7 +64,7 @@ Minimal list to help agents pick the right module without reading every file. Wh
 `setTool` and `selectPattern` mutate state only; callers call `updateUI()` to project to DOM.
 
 ### `audio.js`
-`getAudioContext`, `syncAudioState`, `emitStepSound`
+`configureAudioContext`, `getAudioContext`, `syncAudioState`, `emitStepSound`
 
 ### `render.js`
 `ensureCanvasSize`, `worldToScreen`, `screenToWorld`, `visibleWorldBounds`, `drawRoundedRect`, `drawSparkline`, `draw`, `updateParticles`, `drawPatternPreview`

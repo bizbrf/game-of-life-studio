@@ -66,8 +66,11 @@ export async function copyText(text) {
 
 // Selector for all elements the Tab key can reach inside a modal.
 const FOCUSABLE_SELECTOR =
-  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), ' +
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]):not(.native-select-hidden), ' +
   'textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled])';
+
+let activeSelect = null;
+let activeSelectProxy = null;
 
 // Per-open-modal: remember the element that had focus and the Tab-trap
 // handler so closeModal can remove it cleanly. Stack supports nested modals.
@@ -190,6 +193,132 @@ export function openSpeedPopover() {
 export function toggleSpeedPopover() {
   if (els.speedPopover.classList.contains("visible")) closeSpeedPopover();
   else openSpeedPopover();
+}
+
+// ---------- Custom select popover ----------
+
+function getSelectLabel(select) {
+  return select.selectedOptions[0]?.textContent || "Select";
+}
+
+function syncSelectProxyLabel(select) {
+  if (!select?._proxyButton) return;
+  select._proxyButton.querySelector(".select-proxy-label").textContent = getSelectLabel(select);
+}
+
+function closeSelectPopover({ restoreFocus = false } = {}) {
+  if (!els.selectPopover) return;
+  els.selectPopover.classList.remove("visible");
+  els.selectPopover.innerHTML = "";
+  els.selectPopover.removeAttribute("aria-activedescendant");
+  if (activeSelectProxy) activeSelectProxy.setAttribute("aria-expanded", "false");
+  const proxyToRestore = activeSelectProxy;
+  activeSelect = null;
+  activeSelectProxy = null;
+  if (restoreFocus && proxyToRestore) proxyToRestore.focus();
+}
+
+function focusSelectOption(index) {
+  const options = [...els.selectPopover.querySelectorAll(".select-option")];
+  if (!options.length) return;
+  const nextIndex = Math.max(0, Math.min(options.length - 1, index));
+  options[nextIndex].focus();
+  els.selectPopover.setAttribute("aria-activedescendant", options[nextIndex].id);
+}
+
+function chooseSelectOption(optionButton) {
+  if (!activeSelect || !optionButton) return;
+  activeSelect.value = optionButton.dataset.value;
+  syncSelectProxyLabel(activeSelect);
+  activeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+  closeSelectPopover({ restoreFocus: true });
+}
+
+function openSelectPopover(select, proxyButton) {
+  if (activeSelect === select && els.selectPopover.classList.contains("visible")) {
+    closeSelectPopover({ restoreFocus: true });
+    return;
+  }
+  closeSelectPopover();
+  activeSelect = select;
+  activeSelectProxy = proxyButton;
+  proxyButton.setAttribute("aria-expanded", "true");
+  els.selectPopover.innerHTML = "";
+  const rect = proxyButton.getBoundingClientRect();
+  const estimatedHeight = Math.min(320, select.options.length * 42 + 12);
+  const left = Math.min(Math.max(10, rect.left), Math.max(10, window.innerWidth - rect.width - 10));
+  const top = rect.bottom + 6 + estimatedHeight > window.innerHeight - 10
+    ? Math.max(10, rect.top - estimatedHeight - 6)
+    : rect.bottom + 6;
+  els.selectPopover.style.left = `${left}px`;
+  els.selectPopover.style.top = `${top}px`;
+  els.selectPopover.style.minWidth = `${rect.width}px`;
+  els.selectPopover.setAttribute("aria-label", proxyButton.getAttribute("aria-label") || "Select options");
+  [...select.options].forEach((option, index) => {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.id = `${select.id}-option-${index}`;
+    item.className = "select-option";
+    item.dataset.value = option.value;
+    item.setAttribute("role", "option");
+    item.setAttribute("aria-selected", String(option.value === select.value));
+    item.textContent = option.textContent;
+    if (option.value === select.value) item.classList.add("selected");
+    item.addEventListener("click", () => chooseSelectOption(item));
+    item.addEventListener("keydown", (event) => {
+      const options = [...els.selectPopover.querySelectorAll(".select-option")];
+      const currentIndex = options.indexOf(item);
+      if (event.key === "ArrowDown") { event.preventDefault(); focusSelectOption(currentIndex + 1); }
+      else if (event.key === "ArrowUp") { event.preventDefault(); focusSelectOption(currentIndex - 1); }
+      else if (event.key === "Home") { event.preventDefault(); focusSelectOption(0); }
+      else if (event.key === "End") { event.preventDefault(); focusSelectOption(options.length - 1); }
+      else if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        chooseSelectOption(item);
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        closeSelectPopover({ restoreFocus: true });
+      }
+    });
+    els.selectPopover.appendChild(item);
+  });
+  els.selectPopover.classList.add("visible");
+  const selectedIndex = Math.max(0, [...select.options].findIndex((option) => option.value === select.value));
+  focusSelectOption(selectedIndex);
+}
+
+function upgradeSelect(select) {
+  if (!select || select._proxyButton) return;
+  select.classList.add("native-select-hidden");
+  select.tabIndex = -1;
+  select.setAttribute("aria-hidden", "true");
+  const proxy = document.createElement("button");
+  proxy.type = "button";
+  proxy.className = "select-proxy";
+  proxy.setAttribute("aria-haspopup", "listbox");
+  proxy.setAttribute("aria-expanded", "false");
+  proxy.setAttribute("aria-controls", "select-popover");
+  proxy.setAttribute("aria-label", select.getAttribute("aria-label") || "Choose option");
+  proxy.innerHTML = '<span class="select-proxy-label"></span><span class="select-proxy-caret" aria-hidden="true">⌄</span>';
+  proxy.addEventListener("click", (event) => {
+    event.stopPropagation();
+    openSelectPopover(select, proxy);
+  });
+  proxy.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openSelectPopover(select, proxy);
+    } else if (event.key === "Escape" && els.selectPopover.classList.contains("visible")) {
+      event.preventDefault();
+      event.stopPropagation();
+      closeSelectPopover({ restoreFocus: true });
+    }
+  });
+  select.addEventListener("change", () => syncSelectProxyLabel(select));
+  select.after(proxy);
+  select._proxyButton = proxy;
+  syncSelectProxyLabel(select);
 }
 
 // ---------- Inspector drawer ----------
@@ -327,6 +456,7 @@ export function setupUI() {
   customOption.value = "custom";
   customOption.textContent = "Custom";
   els.rulesetSelect.appendChild(customOption);
+  upgradeSelect(els.rulesetSelect);
 
   // Pattern category (pattern modal)
   CATEGORY_OPTIONS.forEach((category) => {
@@ -335,6 +465,7 @@ export function setupUI() {
     option.textContent = category;
     els.patternCategory.appendChild(option);
   });
+  upgradeSelect(els.patternCategory);
 
   // Tool grid — icon-only buttons
   TOOL_ORDER.forEach((tool) => {
@@ -420,6 +551,12 @@ export function setupUI() {
     }
   });
 
+  document.addEventListener("click", (event) => {
+    if (!els.selectPopover?.classList.contains("visible")) return;
+    if (els.selectPopover.contains(event.target) || activeSelectProxy?.contains(event.target)) return;
+    closeSelectPopover();
+  });
+
   renderPatternBrowser();
   renderPatternCard();
 }
@@ -473,6 +610,7 @@ export function updateUI() {
 
   // Rule controls
   els.rulesetSelect.value = RULESETS.find((r) => r.rule === state.rule) ? state.rule : "custom";
+  syncSelectProxyLabel(els.rulesetSelect);
   els.ruleInput.value = state.rule;
   if (els.exportNote) els.exportNote.textContent = `Exports use ${state.rule}.`;
   els.accentPicker.value = state.accent;

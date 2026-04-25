@@ -8,7 +8,7 @@ import { setTheme, getTheme } from "./themes.js";
 import { restoreSnapshot, pushSimulationSnapshot, undo, redo } from "./history.js";
 import { stepSimulation, resetSimulation, randomFill, updateSimulation, commitStroke } from "./sim.js";
 import { getCurrentPattern, selectPattern, setTool } from "./tools.js";
-import { syncAudioState } from "./audio.js";
+import { configureAudioContext, syncAudioState } from "./audio.js";
 import {
   ensureCanvasSize,
   draw,
@@ -160,7 +160,7 @@ function hydrateDomReferences() {
     // Status strip
     "status-dot", "status-rule", "status-gen", "status-pop", "status-pop-token",
     // Popovers
-    "sparkline-popover", "speed-popover", "rule-popover",
+    "sparkline-popover", "speed-popover", "rule-popover", "select-popover",
     // Inspector
     "inspector", "inspector-close", "inspector-backdrop",
     // Scene row
@@ -553,6 +553,7 @@ function updateLoop(now) {
 }
 
 function initialize() {
+  configureAudioContext(window.AudioContext);
   hydrateDomReferences();
   setupUI();
   ensureCanvasSize(window.devicePixelRatio || 1);

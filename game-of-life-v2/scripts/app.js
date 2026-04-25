@@ -468,7 +468,8 @@ function bindEvents() {
       els.importText.value = await file.text();
       showToast(`Loaded ${file.name}`);
     } catch (error) {
-      showToast(`Could not read ${file.name}: ${error.message || "read failed"}`);
+      const message = error?.message || (error == null ? "read failed" : String(error));
+      showToast(`Could not read ${file.name}: ${message}`);
     }
   });
   els.exportRleBtn.addEventListener("click", () => { els.exportText.value = exportToRle(); });

@@ -78,25 +78,34 @@ export function importJson(text) {
   if (!Array.isArray(data.cells)) throw new Error("JSON must contain a cells array.");
   // Validate everything before touching state so a bad import leaves the
   // existing world intact. compileRule is pure (no state mutation), and
-  // per-entry cell validation rejects garbage before new Map silently
-  // coerces it into non-rendering ghost entries.
+  // the rebuilt map rejects malformed keys/ages before render or sim can
+  // consume them.
   if (data.rule && !compileRule(data.rule)) {
     throw new Error("Invalid rule. Use B/S notation like B3/S23.");
   }
+  const importedCells = new Map();
   for (let i = 0; i < data.cells.length; i += 1) {
     const entry = data.cells[i];
     if (!Array.isArray(entry) || entry.length !== 2 || typeof entry[0] !== "string" || typeof entry[1] !== "number") {
       throw new Error(`Invalid cell entry at index ${i}. Expected [key, age].`);
     }
+    const [key, age] = entry;
+    if (!/^-?\d+,-?\d+$/.test(key) || !Number.isInteger(age) || age < 1) {
+      throw new Error(`Invalid cell entry at index ${i}. Expected integer key and positive integer age.`);
+    }
+    const [x, y] = xyFromKey(key);
+    importedCells.set(normalizeKeyForState(x, y), age);
   }
   let generation = 0;
   if (data.generation !== undefined) {
     const parsed = Number(data.generation);
-    if (!Number.isFinite(parsed)) throw new Error("Invalid generation. Expected a finite number.");
+    if (!Number.isInteger(parsed) || parsed < 0) {
+      throw new Error("Invalid generation. Expected a non-negative integer.");
+    }
     generation = parsed;
   }
   const before = new Map(state.liveCells);
-  state.liveCells = new Map(data.cells);
+  state.liveCells = importedCells;
   if (data.rule) applyRule(data.rule);
   if (data.theme) setTheme(data.theme, true);
   state.generation = generation;

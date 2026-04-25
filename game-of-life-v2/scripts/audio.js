@@ -2,10 +2,15 @@
 
 import { state, audioState } from "./state.js";
 
+let AudioContextCtor = null;
+
+export function configureAudioContext(Ctor) {
+  AudioContextCtor = Ctor || null;
+}
+
 export function getAudioContext() {
-  const Ctor = window.AudioContext;
-  if (!Ctor) return null;
-  if (!audioState.context) audioState.context = new Ctor();
+  if (!AudioContextCtor) return null;
+  if (!audioState.context) audioState.context = new AudioContextCtor();
   return audioState.context;
 }
 

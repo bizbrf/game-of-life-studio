@@ -736,6 +736,98 @@ body.rewinding .status-strip .dot {
 }
 
 /* ============================================================
+   Custom select controls
+   ============================================================ */
+
+.native-select-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  clip-path: inset(50%);
+}
+
+.select-proxy {
+  width: 100%;
+  min-height: 38px;
+  padding: 9px 11px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(0,0,0,0.14);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.select-proxy:hover,
+.select-proxy[aria-expanded="true"] {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.14);
+}
+
+.select-proxy-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.select-proxy-caret {
+  color: var(--text-dim);
+  flex: 0 0 auto;
+}
+
+.select-popover {
+  position: absolute;
+  display: none;
+  padding: 6px;
+  max-height: min(320px, calc(100vh - 24px));
+  overflow-y: auto;
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  backdrop-filter: var(--panel-blur);
+  -webkit-backdrop-filter: var(--panel-blur);
+  z-index: 32;
+}
+
+.select-popover.visible {
+  display: grid;
+  gap: 4px;
+}
+
+.select-option {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.select-option:hover,
+.select-option:focus-visible {
+  background: rgba(255,255,255,0.07);
+}
+
+.select-option.selected {
+  background: rgba(var(--accent-rgb), 0.18);
+  border-color: rgba(var(--accent-rgb), 0.32);
+}
+
+/* ============================================================
    Inspector backdrop (subtle full-canvas dim when drawer is open)
    ============================================================ */
 

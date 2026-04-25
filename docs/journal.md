@@ -67,6 +67,11 @@ Original prompt: Build a complete Game of Life v2 as a single self-contained `in
   - Rule and speed popovers are inline-built rather than using the shared `.select-popover` component; a general custom-select refactor is still a good follow-up.
   - Focus management on inspector open could be tighter (auto-focus first focusable element, focus-trap while open) — current behavior only sets `aria-hidden` and class.
   - The `⌘K` shortcut hint shows the mac glyph on Windows; a small platform-aware switch would be polish.
+- 2026-04-25 — Addressed PR #25 review follow-ups for JSON import robustness.
+  - `importJson` now rebuilds imported JSON cells through validated integer keys and positive integer ages before touching state, normalizes keys through `normalizeKeyForState`, and rejects negative/fractional generations.
+  - The file-upload read error toast now handles non-Error thrown values without throwing again.
+  - Verification: `node --check` passed for `app.js` and `io.js`; headless Chromium covered rejected malformed JSON entries, unchanged state after rejection, wrap-mode key normalization, JSON export, invalid JSON import toast, Tab/Shift+Tab pattern cycling, play/pause, step, and no console/page errors.
+  - Weak spot: the readable-file failure path is still hard to force in browser automation without deeper file chooser mocking; the fallback expression itself is now defensive.
 - 2026-04-14 — Landed the 4 correctness fixes from [docs/review/findings-bugs.md](review/findings-bugs.md) (Batch 2) on `fix/review-batch-2-bugs`, 4 atomic commits:
   - `endInteraction` pinch-zoom crash — added a `touch-panzoom` guard next to the existing `pan` guard in [game-of-life-v2/scripts/input.js](game-of-life-v2/scripts/input.js).
   - Sparkline fill polygon — [game-of-life-v2/scripts/render.js](game-of-life-v2/scripts/render.js) now opens a fresh path after `stroke()`, walks the data again, and closes through both bottom corners. Screenshot: [output/batch2-sparkline-closeup.png](output/batch2-sparkline-closeup.png) shows the correct vertical left edge.

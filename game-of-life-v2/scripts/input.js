@@ -75,6 +75,7 @@ export function updateInteraction(clientX, clientY) {
     state.hoverCell = screenToWorld(clientX, clientY);
     return;
   }
+  const { canvas } = canvasRefs;
   const world = screenToWorld(clientX, clientY);
   state.hoverCell = world;
   if (state.interaction.type === "erase-or-pan") {

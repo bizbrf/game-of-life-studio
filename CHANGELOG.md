@@ -8,6 +8,7 @@ The narrative dev log lives in [docs/journal.md](docs/journal.md). This file rec
 
 ### Added
 - GitHub Actions CI for whitespace checks, JavaScript syntax checks, and a headless browser smoke path.
+- Rules Lab for clickable B/S birth and survival counts, preset descriptions, and shareable `?rule=` URLs.
 
 ### Changed
 - Pattern cycling moved from reserved `Tab` / `Shift+Tab` to `P` / `Shift+P` so native focus navigation works in panels and popovers.

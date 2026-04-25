@@ -78,7 +78,7 @@ Minimal list to help agents pick the right module without reading every file. Wh
 `autoFit` mutates camera state only; callers call `updateUI()`. Keyboard shortcut dispatch lives in `app.handleKeydown` (not here) so `input.js` has no upward imports.
 
 ### `ui.js`
-`showToast`, `copyText`, `openModal`, `closeModal`, `closeTopModal`, `isModalOpen`, `adjustSpeed`, `closeSpeedPopover`, `openSpeedPopover`, `toggleSpeedPopover`, `openInspector`, `closeInspector`, `toggleInspector`, `renderPatternCard`, `showSparklinePopover`, `hideSparklinePopover`, `renderPatternBrowser`, `setupUI`, `updateUI`, `updatePerformanceCounters`, `cycleTheme`, `hexToRgb` (re-export)
+`showToast`, `copyText`, `openModal`, `closeModal`, `closeTopModal`, `isModalOpen`, `adjustSpeed`, `closeSpeedPopover`, `openSpeedPopover`, `toggleSpeedPopover`, `openInspector`, `closeInspector`, `toggleInspector`, `renderPatternCard`, `showSparklinePopover`, `hideSparklinePopover`, `renderPatternBrowser`, `syncRuleLab`, `setupUI`, `updateUI`, `updatePerformanceCounters`, `cycleTheme`, `hexToRgb` (re-export)
 
 ### `app.js`
 No exports. Side-effects only: attaches `window.render_game_to_text`, `window.advanceTime`, `window.__gameOfLifeV2`; binds events; starts the RAF loop.

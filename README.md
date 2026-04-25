@@ -17,6 +17,7 @@ A polished web-based studio for Conway's Game of Life and related cellular autom
 
 - Sparse infinite grid (`Map<string, number>` backing store) — pan and zoom without boundaries
 - Configurable rulesets: Conway (B3/S23), HighLife, Seeds, Day & Night, and custom B/S notation
+- Rules Lab with clickable birth/survival counts and shareable rule URLs
 - Wrap mode for toroidal simulations
 - Variable speed from 1 to 60 generations per second
 

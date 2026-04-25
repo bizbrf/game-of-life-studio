@@ -6,6 +6,12 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+function urlWithRule(rule) {
+  const url = new URL(appUrl);
+  url.searchParams.set("rule", rule);
+  return url.toString();
+}
+
 (async () => {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
@@ -19,6 +25,23 @@ function assert(condition, message) {
   try {
     await page.goto(appUrl, { waitUntil: "networkidle" });
     await page.waitForSelector("#life-canvas");
+
+    await page.goto(urlWithRule("B36/S23"), { waitUntil: "networkidle" });
+    await page.waitForSelector("#life-canvas");
+    assert(await page.evaluate(() => window.__gameOfLifeV2.state.rule === "B36/S23"), "Rule URL should restore HighLife.");
+    await page.keyboard.press("Control+K");
+    await page.waitForSelector("#inspector.open");
+    assert(await page.inputValue("#rule-input") === "B36/S23", "Rule input should reflect URL-restored rule.");
+    assert(await page.evaluate(() => document.querySelector('#rule-birth-digits [data-value="6"]').getAttribute("aria-pressed") === "true"), "Rules Lab should show active birth count 6.");
+    await page.click('#rule-birth-digits [data-value="6"]');
+    assert(await page.evaluate(() => window.__gameOfLifeV2.state.rule === "B3/S23"), "Rules Lab should toggle birth count 6 off.");
+    assert(new URL(page.url()).searchParams.get("rule") === "B3/S23", "Rules Lab edits should update the shareable URL.");
+    await page.click('#rule-birth-digits [data-value="8"]');
+    assert(await page.evaluate(() => window.__gameOfLifeV2.state.rule === "B38/S23"), "Rules Lab should toggle birth count 8 on.");
+    const shareUrl = await page.evaluate(() => window.__gameOfLifeV2.shareUrlForRule());
+    assert(new URL(shareUrl).searchParams.get("rule") === "B38/S23", "Share URL should include the current rule.");
+    await page.keyboard.press("Escape");
+    await page.waitForSelector("#inspector:not(.open)");
 
     await page.keyboard.press("Control+K");
     await page.waitForSelector("#inspector.open");

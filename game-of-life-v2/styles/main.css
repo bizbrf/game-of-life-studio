@@ -471,6 +471,52 @@ body.rewinding .status-strip .dot {
   font-family: inherit;
 }
 
+.rule-builder {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(0,0,0,0.12);
+}
+
+.rule-builder-row {
+  display: grid;
+  grid-template-columns: 54px 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.rule-digit-grid {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.rule-digit {
+  min-height: 28px;
+  padding: 0;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.rule-digit.active {
+  background: rgba(var(--accent-rgb), 0.2);
+  border-color: rgba(var(--accent-rgb), 0.36);
+  color: var(--text);
+}
+
+.rule-meta-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 36px;
+  align-items: center;
+  gap: 8px;
+}
+
+.rule-meta-row .subtitle {
+  line-height: 1.35;
+}
+
 .inspector .theme-swatches {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
